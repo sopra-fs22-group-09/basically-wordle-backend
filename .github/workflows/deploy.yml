@@ -1,0 +1,44 @@
+name: Deploy Project
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: install Java JDK 17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+
+      - name: Push to Dokku
+        uses: dokku/github-action@v1.0.1
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        with:
+          git_remote_url: 'ssh://dokku@oxv.io:34654/wordlepvp-backend'
+          ssh_private_key: $SSH_PRIVATE_KEY
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      # uncomment for assignment 2-4
+      - name: test the project and upload test report -> sonarqube
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew test jacocoTestReport sonarqube --info

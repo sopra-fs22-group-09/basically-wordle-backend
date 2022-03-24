@@ -1,0 +1,12 @@
+type Query {
+    greeting: String
+    greetingMono: String
+    greetingsFlux: [String]
+}
+type Subscription {
+    greetings: String
+}
+type GameSettings {
+    wordLength: Int
+    # ...
+}

@@ -1,0 +1,113 @@
+plugins {
+	id 'org.springframework.boot' version '2.7.0-SNAPSHOT'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+	id 'idea'
+	id 'jacoco'
+	id "org.sonarqube" version "3.3"
+}
+
+group = 'ch.uzh.sopra.fs22.backend'
+version = '0.0.1-SNAPSHOT'
+//sourceCompatibility = '17'
+
+java {
+	toolchain {
+		languageVersion.set(JavaLanguageVersion.of(17))
+	}
+}
+
+configurations {
+	developmentOnly
+	runtimeClasspath {
+		extendsFrom developmentOnly
+	}
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+	maven { url 'https://repo.spring.io/milestone' }
+	maven { url 'https://repo.spring.io/snapshot' }
+}
+
+springBoot {
+	mainClass.set('ch.uzh.sopra.fs22.backend.wordlepvp.WordlePvpBackendApplication')
+}
+
+jar {
+	manifest {
+		attributes (
+				'Main-Class': 'ch.uzh.sopra.fs22.backend.wordlepvp.WordlePvpBackendApplication'
+		)
+	}
+}
+
+dependencies {
+	//implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-graphql'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	//implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	//compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	//runtimeOnly 'org.postgresql:postgresql'
+	//annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.springframework.graphql:spring-graphql-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+}
+
+bootJar {
+	archiveFileName = "${archiveBaseName.get()}.${archiveExtension.get()}"
+}
+
+jacocoTestReport {
+	dependsOn test
+}
+
+jacoco {
+	toolVersion = "0.8.6"
+	reportsDirectory = file("$buildDir/jacocoReportDir")
+}
+
+jacocoTestReport {
+	group = "Reporting"
+	reports {
+		xml.enabled true
+		csv.enabled false
+		html.destination file("${buildDir}/jacocoHtml")
+	}
+}
+
+File secretPropsFile = file('./local.properties')
+if (secretPropsFile.exists()) {
+	Properties p = new Properties()
+	p.load(new FileInputStream(secretPropsFile))
+	p.each { name, value ->
+		ext[name] = value
+	}
+}
+
+sonarqube {
+	properties {
+		property "sonar.projectKey", "sopra-fs22-group-09_basically-wordle-backend"
+		property "sonar.organization", "sopra-fs22-group-09"
+		property "sonar.host.url", "https://sonarcloud.io"
+		property "sonar.coverage.jacoco.xmlReportPaths", ["$buildDir/jacocoReportDir/test/jacocoTestReport.xml"]
+		property "sonar.cpd.exclusions", "**/entity/*.java,**/rest/dto/*.java"
+	}
+}
+
+project.tasks["sonarqube"].dependsOn {
+	test
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+defaultTasks 'bootJar', 'build'
