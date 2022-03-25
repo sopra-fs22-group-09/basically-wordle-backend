@@ -21,6 +21,13 @@ jobs:
         with:
           java-version: 1.17
 
+      # uncomment for assignment 2-4
+      - name: test the project and upload test report -> sonarqube
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew test jacocoTestReport sonarqube --info
+
       - name: Push to Dokku
         uses: dokku/github-action@v1.0.1
         env:
@@ -35,10 +42,3 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-
-      # uncomment for assignment 2-4
-      - name: test the project and upload test report -> sonarqube
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew test jacocoTestReport sonarqube --info
