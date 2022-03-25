@@ -1,10 +1,22 @@
 type Query {
+    lobbyById(id: Int!): Lobby
     greeting: String
     greetingMono: String
     greetingsFlux: [String]
 }
+type Mutation {
+    addLobby(input: LobbyInput): Lobby
+}
+type Lobby {
+    id: Int!
+    name: String
+}
 type Subscription {
     greetings: String
+}
+input LobbyInput {
+    id: Int!
+    name: String!
 }
 type GameSettings {
     wordLength: Int

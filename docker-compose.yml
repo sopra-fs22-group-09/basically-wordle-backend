@@ -1,0 +1,28 @@
+version: "3.7"
+services:
+  postgres:
+    image: postgres:13-alpine
+    volumes:
+      - pg_spring:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: "docker-pg"
+      POSTGRES_PASSWORD: "docker-pg"
+      PGPASSWORD: "docker-pg"
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  pg_spring:
+    driver: local

@@ -46,20 +46,30 @@ jar {
 }
 
 dependencies {
-	//implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-graphql'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	// TODO: Uncomment for simple email verification
+//	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.hibernate:hibernate-validator:7.0.4.Final'
 	//implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	//compileOnly 'org.projectlombok:lombok'
+	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	//runtimeOnly 'org.postgresql:postgresql'
-	//annotationProcessor 'org.projectlombok:lombok'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation "org.testcontainers:junit-jupiter:1.16.3"
+	testImplementation 'org.testcontainers:postgresql:1.16.3'
 	testImplementation 'io.projectreactor:reactor-test'
 	testImplementation 'org.springframework.graphql:spring-graphql-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 }
+
+//bootRun {
+//	systemProperties = System.properties
+//}
 
 bootJar {
 	archiveFileName = "${archiveBaseName.get()}.${archiveExtension.get()}"
