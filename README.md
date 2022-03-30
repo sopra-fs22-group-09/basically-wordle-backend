@@ -7,7 +7,7 @@
 
 Wordle PvP Backend implementation with Spring Boot and GraphQL.
 
-## Development (Linux/ WSL)
+## Development
 ### Pre-requisites
 - [Docker](https://docs.docker.com/get-docker/) with [Compose](https://docs.docker.com/compose/install/)
   - For Windows, go with [Docker Desktop](https://docs.docker.com/desktop/windows/install/)
@@ -17,7 +17,10 @@ Run the following command to start the PostgreSQL and Redis database:
 $ docker-compose up -d
 ```
 
-You can then use IntelliJ run configurations to launch the server as usual.
+Set the `local` profile in the run configurations dialog:  
+![img.png](screenshots/img_2.png)
+
+You can now use IntelliJ run configurations to launch the server as usual.
 
 To shut down the compose stack, run:
 ```shell
@@ -25,7 +28,7 @@ $ docker-compose down
 ```
 
 ### Auto-reload backend
-Enable "Build project automatically":
+Enable "Build project automatically":  
 ![Settings1](screenshots/img_1.png)
-Enable "Allow auto-make to start even if developed application is currently running":
+Enable "Allow auto-make to start even if developed application is currently running":  
 ![Settings2](screenshots/img.png)
