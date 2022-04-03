@@ -5,11 +5,18 @@ type Query {
     greetingsFlux: [String]
 }
 type Mutation {
-    addLobby(input: LobbyInput): Lobby
+    addLobby(input: LobbyInput!): Lobby
+    addUser(input: RegisterInput!): User
 }
 type Lobby {
     id: Int!
     name: String
+}
+type User {
+    id: String!
+    username: String!
+    email: String!
+    passwordHash: String!
 }
 type Subscription {
     greetings: String
@@ -17,6 +24,11 @@ type Subscription {
 input LobbyInput {
     id: Int!
     name: String!
+}
+input RegisterInput {
+    username: String!
+    email: String!
+    password: String!
 }
 type GameSettings {
     wordLength: Int

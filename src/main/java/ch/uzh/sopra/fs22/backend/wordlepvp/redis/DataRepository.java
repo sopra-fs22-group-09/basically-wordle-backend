@@ -3,7 +3,6 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.redis;
 import ch.uzh.sopra.fs22.backend.wordlepvp.redis.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.stereotype.Repository;
@@ -31,14 +30,6 @@ public class DataRepository {
         return redisTemplate.opsForValue().get(id);
     }
 
-    public String getBasic() {
-        return "Hello world!";
-    }
-
-    public Mono<String> getGreeting() {
-        return Mono.delay(Duration.ofMillis(500)).map(aLong -> "Hello!");
-    }
-
     public Flux<String> getGreetings() {
         return Mono.delay(Duration.ofMillis(500))
                 .flatMapMany(aLong -> Flux.just("Hi!", "Bonjour!", "Hola!", "Ciao!", "Zdravo!"));
@@ -51,5 +42,4 @@ public class DataRepository {
                 .log()
                 .delayElements(Duration.ofSeconds(2)));
     }
-
 }

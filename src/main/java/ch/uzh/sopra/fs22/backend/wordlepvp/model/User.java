@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -21,4 +22,13 @@ public class User implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "uuid2")
     @Column(name = "id", length = 36, updatable = false, nullable = false)
     private UUID id;
+
+    @Column(nullable = false, unique = true) // ...
+    private String username;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+//    @Column(name = "passwordHash", )
+    private String passwordHash;
 }
