@@ -36,7 +36,9 @@ public class SampleController {
     }
 
     @QueryMapping
-    public Lobby lobbyById(@Argument @NotNull Long id) { return this.dataRepository.getLobbyById(id); }
+    public Lobby lobbyById(@Argument @NotNull Long id) {
+        return this.dataRepository.getLobbyById(id);
+    }
 
     @MutationMapping
     public Lobby addLobby(@Argument @Valid LobbyInput input) {

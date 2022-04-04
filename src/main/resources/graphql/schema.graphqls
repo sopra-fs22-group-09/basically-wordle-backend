@@ -13,7 +13,7 @@ type Lobby {
     name: String
 }
 type User {
-    id: String!
+    id: String
     username: String!
     email: String!
     passwordHash: String!

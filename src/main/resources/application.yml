@@ -8,6 +8,11 @@ spring:
     schema:
       printer:
         enabled: true
+    cors:
+      allowed-origins: http://localhost:3000 #, und no anderi allowed oder "*"
+      #allowed-methods: GET,POST
+      #allowed-headers: Content-Type, Authorization
+      max-age: 1800s
 
   datasource:
     driverClassName: org.postgresql.Driver
