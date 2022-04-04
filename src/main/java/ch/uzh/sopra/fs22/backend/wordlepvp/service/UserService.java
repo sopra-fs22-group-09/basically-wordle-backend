@@ -7,8 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Transactional
@@ -25,11 +27,14 @@ public class UserService {
     }
 
     public User createUser(RegisterInput input) {
+        if (this.userRepository.findByUsername(input.getUsername()) != null)
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
+
         User user = User.builder()
-                .passwordHash(input.getPassword())  // TODO: Hash!
-                .username(input.getUsername())
-                .email(input.getEmail())
-                .build();
+            .passwordHash(input.getPassword())  // TODO: Hash!
+            .username(input.getUsername())
+            .email(input.getEmail())
+            .build();
 
         return this.userRepository.saveAndFlush(user);
     }

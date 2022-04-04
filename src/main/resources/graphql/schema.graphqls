@@ -5,15 +5,15 @@ type Query {
     greetingsFlux: [String]
 }
 type Mutation {
+    register(input: RegisterInput!): User
     addLobby(input: LobbyInput!): Lobby
-    addUser(input: RegisterInput!): User
 }
 type Lobby {
     id: Int!
     name: String
 }
 type User {
-    id: String #!
+    id: String!
     username: String!
     email: String!
     passwordHash: String!

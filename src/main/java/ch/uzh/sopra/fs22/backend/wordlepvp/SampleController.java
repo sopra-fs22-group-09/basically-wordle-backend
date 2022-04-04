@@ -31,7 +31,7 @@ public class SampleController {
     }
 
     @MutationMapping
-    public User addUser(@Argument @Valid RegisterInput input) {
+    public User register(@Argument @Valid RegisterInput input) {
         return this.userService.createUser(input);
     }
 
