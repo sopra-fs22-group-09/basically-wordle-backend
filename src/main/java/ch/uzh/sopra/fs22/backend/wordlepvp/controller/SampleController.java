@@ -1,8 +1,8 @@
-package ch.uzh.sopra.fs22.backend.wordlepvp;
+package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.redis.DataRepository;
-import ch.uzh.sopra.fs22.backend.wordlepvp.redis.model.Lobby;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;

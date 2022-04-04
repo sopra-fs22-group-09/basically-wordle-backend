@@ -1,4 +1,4 @@
-package ch.uzh.sopra.fs22.backend.wordlepvp;
+package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
