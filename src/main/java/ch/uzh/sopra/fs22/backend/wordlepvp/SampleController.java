@@ -5,6 +5,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.redis.DataRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.redis.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -32,8 +33,20 @@ public class SampleController {
 
     @MutationMapping
     public User register(@Argument @Valid RegisterInput input) {
+
+        //TODO: add header
         return this.userService.createUser(input);
     }
+
+    @MutationMapping
+    public User login(@Argument @Valid LoginInput input) {
+
+        //TODO: add header
+
+        return this.userService.validateUser(input);
+    }
+
+
 
     @QueryMapping
     public Lobby lobbyById(@Argument @NotNull Long id) {

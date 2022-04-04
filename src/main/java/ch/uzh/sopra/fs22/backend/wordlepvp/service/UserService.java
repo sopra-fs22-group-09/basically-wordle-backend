@@ -2,6 +2,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -37,5 +40,20 @@ public class UserService {
             .build();
 
         return this.userRepository.saveAndFlush(user);
+    }
+
+    public User validateUser(LoginInput input) {
+        User userByUsername = userRepository.findByUsername(input.getUsername());
+
+        if (userByUsername == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        //TODO: Cannot compare passwordhash to password !!!
+        if (Objects.equals(userByUsername.getPasswordHash(), input.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        //TODO: setUserStatus
+        return userByUsername;
     }
 }

@@ -2,6 +2,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -9,6 +10,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.util.UUID;
 
+@Data
 @Entity
 @Builder
 @NoArgsConstructor

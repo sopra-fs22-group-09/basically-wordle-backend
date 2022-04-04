@@ -6,11 +6,11 @@ type Query {
 }
 type Mutation {
     register(input: RegisterInput!): User
+    login(input: LoginInput!): User
     addLobby(input: LobbyInput!): Lobby
 }
-type Lobby {
-    id: Int!
-    name: String
+type Subscription {
+    greetings: String
 }
 type User {
     id: String!
@@ -18,17 +18,22 @@ type User {
     email: String!
     passwordHash: String!
 }
-type Subscription {
-    greetings: String
-}
-input LobbyInput {
+type Lobby {
     id: Int!
-    name: String!
+    name: String
 }
 input RegisterInput {
     username: String!
     email: String!
     password: String!
+}
+input LoginInput {
+    username: String!
+    password: String!
+}
+input LobbyInput {
+    id: Int!
+    name: String!
 }
 type GameSettings {
     wordLength: Int
