@@ -12,6 +12,5 @@ public class LoginInput {
     private String username;
 
     @NotNull
-    //@Length(min = 5, max = 50)
     private String password;
 }

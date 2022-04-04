@@ -1,6 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.redis;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.redis.model.Lobby;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;

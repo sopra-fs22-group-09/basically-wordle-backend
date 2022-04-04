@@ -1,6 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.UserRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
@@ -22,7 +22,6 @@ public class UserService {
     private final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
-
 
     @Autowired
     public UserService(@Qualifier("userRepository") UserRepository userRepository) {
