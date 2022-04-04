@@ -16,7 +16,12 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    platform: postgres
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      platform: postgres
 ---
 spring:
   config:
@@ -49,7 +54,7 @@ spring:
     password: docker-pg
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
 
   redis:
     host: localhost
@@ -59,10 +64,7 @@ management:
   endpoints:
     web:
       exposure:
-        include:
-          - health
-          - metrics
-          - info
+        include: "*"
 
 logging:
   level:

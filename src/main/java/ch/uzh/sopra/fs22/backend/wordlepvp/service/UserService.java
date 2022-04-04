@@ -31,6 +31,6 @@ public class UserService {
                 .email(input.getEmail())
                 .build();
 
-        return user;
+        return this.userRepository.saveAndFlush(user);
     }
 }

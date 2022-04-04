@@ -19,9 +19,12 @@ public class DataRepository {
 
     private final RedisTemplate<Long, Lobby> redisTemplate;
 
-    public Lobby saveLobby(LobbyInput lobbyInput) {
-        // TODO: das isch dumm
-        Lobby lobby = new Lobby(lobbyInput.getId(), lobbyInput.getName());
+    public Lobby saveLobby(LobbyInput input) {
+        Lobby lobby = Lobby.builder()
+                .id(input.getId())
+                .name(input.getName())
+                .build();
+
         redisTemplate.opsForValue().set(lobby.getId(), lobby);
         return redisTemplate.opsForValue().get(lobby.getId());
     }
