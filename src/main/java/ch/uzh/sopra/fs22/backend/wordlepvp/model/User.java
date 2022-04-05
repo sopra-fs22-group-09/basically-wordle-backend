@@ -8,6 +8,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -32,4 +33,32 @@ public class User implements Serializable {
 
 //    @Column(name = "passwordHash", )
     private String passwordHash;
+
+    @Column(nullable = false)
+    private String avatarID;
+
+    @OneToMany
+    private Set<User> friends;
+
+    @OneToMany
+    private Set<Score> scores;
+
+    //TODO: no kei klass ..
+    //private Achievement[] achievements;
+
+    @Column(nullable = false)
+    private boolean tutorialCompleted;
+
+    //TODO EIG JSON ..
+    @Column(nullable = false)
+    private String settings;
+
+    @Column(nullable = false)
+    private UserStatus status;
+
+    @Column(nullable = false)
+    private boolean activated;
+
+    @Column(nullable = false)
+    private String resetToken;
 }
