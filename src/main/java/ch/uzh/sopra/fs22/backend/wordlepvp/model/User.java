@@ -8,7 +8,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -37,20 +37,19 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String avatarID;
 
-    //TODO: ka stimmt das mit de annotation?
-    @ElementCollection
-    private ArrayList<UUID> friends;
+    @OneToMany
+    private Set<User> friends;
 
-    //TODO: ka da stimmt was nid ?
-    //private ArrayList<Score> scores;
+    @OneToMany
+    private Set<Score> scores;
 
-    //TODO: no keis model
+    //TODO: no kei klass ..
     //private Achievement[] achievements;
 
     @Column(nullable = false)
     private boolean tutorialCompleted;
 
-    //TODO EIG JSON?
+    //TODO EIG JSON ..
     @Column(nullable = false)
     private String settings;
 
