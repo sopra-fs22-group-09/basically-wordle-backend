@@ -1,5 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.UserStatus;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
@@ -38,6 +39,7 @@ public class UserService {
             .email(input.getEmail())
             .build();
 
+        user.setStatus(UserStatus.ONLINE);
         return this.userRepository.saveAndFlush(user);
     }
 
@@ -49,7 +51,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The username and password combination does not exist.");
         }
 
-        //TODO: setUserStatus
+        userByUsername.setStatus(UserStatus.ONLINE);
         return userByUsername;
     }
 }
