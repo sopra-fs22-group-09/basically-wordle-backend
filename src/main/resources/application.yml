@@ -42,6 +42,9 @@ spring:
     url: ${DATABASE_URL}
   redis:
     url: ${REDIS_URL}
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
 
   graphql:
     cors:
