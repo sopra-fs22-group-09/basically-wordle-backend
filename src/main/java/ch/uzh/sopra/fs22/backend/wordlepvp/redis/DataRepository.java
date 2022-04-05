@@ -1,9 +1,8 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.redis;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.redis.model.Lobby;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.stereotype.Repository;
@@ -20,23 +19,18 @@ public class DataRepository {
 
     private final RedisTemplate<Long, Lobby> redisTemplate;
 
-    public Lobby saveLobby(LobbyInput lobbyInput) {
-        // TODO: das isch dumm
-        Lobby lobby = new Lobby(lobbyInput.getId(), lobbyInput.getName());
+    public Lobby saveLobby(LobbyInput input) {
+        Lobby lobby = Lobby.builder()
+                .id(input.getId())
+                .name(input.getName())
+                .build();
+
         redisTemplate.opsForValue().set(lobby.getId(), lobby);
         return redisTemplate.opsForValue().get(lobby.getId());
     }
 
     public Lobby getLobbyById(Long id) {
         return redisTemplate.opsForValue().get(id);
-    }
-
-    public String getBasic() {
-        return "Hello world!";
-    }
-
-    public Mono<String> getGreeting() {
-        return Mono.delay(Duration.ofMillis(500)).map(aLong -> "Hello!");
     }
 
     public Flux<String> getGreetings() {
@@ -51,5 +45,4 @@ public class DataRepository {
                 .log()
                 .delayElements(Duration.ofSeconds(2)));
     }
-
 }

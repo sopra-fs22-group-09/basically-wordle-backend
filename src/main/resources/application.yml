@@ -8,10 +8,19 @@ spring:
     schema:
       printer:
         enabled: true
+    cors:
+      #allowed-methods: GET,POST
+      #allowed-headers: Content-Type, Authorization
+      max-age: 1800s
 
   datasource:
     driverClassName: org.postgresql.Driver
-    platform: postgres
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      platform: postgres
 ---
 spring:
   config:
@@ -33,6 +42,10 @@ spring:
     url: ${DATABASE_URL}
   redis:
     url: ${REDIS_URL}
+
+  graphql:
+    cors:
+      allowed-origins: https://wordlepvp-frontend.oxv.io,https://www.oxv.io,https://oxv.io
 ---
 spring:
   config:
@@ -44,7 +57,11 @@ spring:
     password: docker-pg
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
+
+  graphql:
+    cors:
+      allowed-origins: http://localhost:3000
 
   redis:
     host: localhost
@@ -54,18 +71,16 @@ management:
   endpoints:
     web:
       exposure:
-        include:
-          - health
-          - metrics
-          - info
+        include: "*"
 
 logging:
   level:
-    org:
-      springframework:
-        web: debug
-        http: debug
-        graphql: debug
-        security: debug
-    reactor:
-      netty: debug
+    ch.uzh.sopra.fs22.backend.wordlepvp: debug
+    reactor.netty: debug
+    org.springframework:
+      web: debug
+      http: debug
+      graphql: debug
+      security: debug
+
+debug: true

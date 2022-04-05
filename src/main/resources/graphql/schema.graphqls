@@ -5,14 +5,31 @@ type Query {
     greetingsFlux: [String]
 }
 type Mutation {
-    addLobby(input: LobbyInput): Lobby
+    register(input: RegisterInput!): User
+    login(input: LoginInput!): User
+    addLobby(input: LobbyInput!): Lobby
+}
+type Subscription {
+    greetings: String
+}
+type User {
+    id: String!
+    username: String!
+    email: String!
+    passwordHash: String!
 }
 type Lobby {
     id: Int!
     name: String
 }
-type Subscription {
-    greetings: String
+input RegisterInput {
+    username: String!
+    email: String!
+    password: String!
+}
+input LoginInput {
+    username: String!
+    password: String!
 }
 input LobbyInput {
     id: Int!

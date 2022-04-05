@@ -1,4 +1,4 @@
-package ch.uzh.sopra.fs22.backend.wordlepvp.redis.model;
+package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
