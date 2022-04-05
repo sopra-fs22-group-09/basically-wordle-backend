@@ -60,7 +60,7 @@ public class UserService {
         User userByEmail = userRepository.findByEmail(input.getEmail());
 
         if (userByEmail == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "There is no user registered with that Email.");
+            return;
         }
 
         //TODO: generate and send password reset Email
