@@ -4,6 +4,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,5 +52,15 @@ public class UserService {
 
         //TODO: setUserStatus
         return userByUsername;
+    }
+
+    public void resetPassword(ResetInput input) {
+        User userByEmail = userRepository.findByEmail(input.getEmail());
+
+        if (userByEmail == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "There is no user registered with that Email.");
+        }
+
+        //TODO: generate and send password reset Email
     }
 }
