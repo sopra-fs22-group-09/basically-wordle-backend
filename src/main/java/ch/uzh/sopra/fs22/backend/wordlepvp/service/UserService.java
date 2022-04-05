@@ -30,7 +30,7 @@ public class UserService {
 
     public User createUser(RegisterInput input) {
         if (this.userRepository.findByUsername(input.getUsername()) != null)
-            throw new ResponseStatusException(HttpStatus.CONFLICT);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This username is already taken.");
 
         User user = User.builder()
             .passwordHash(input.getPassword())  // TODO: Hash!
@@ -44,12 +44,9 @@ public class UserService {
     public User validateUser(LoginInput input) {
         User userByUsername = userRepository.findByUsername(input.getUsername());
 
-        if (userByUsername == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
         //TODO: Cannot compare passwordhash to password !!!
-        if (Objects.equals(userByUsername.getPasswordHash(), input.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        if (userByUsername == null || Objects.equals(userByUsername.getPasswordHash(), input.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The username and password combination does not exist.");
         }
 
         //TODO: setUserStatus
