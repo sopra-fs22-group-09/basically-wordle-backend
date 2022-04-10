@@ -10,11 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -23,6 +24,8 @@ public class UserService {
     private final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
+
+    private final Argon2PasswordEncoder encoder = new Argon2PasswordEncoder();
 
     @Autowired
     public UserService(@Qualifier("userRepository") UserRepository userRepository) {
@@ -33,25 +36,57 @@ public class UserService {
         if (this.userRepository.findByUsername(input.getUsername()) != null)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This username is already taken.");
 
+        var passwordCandidate = input.getPassword();
+
+        if (passwordCandidate.length() < 5) {
+            // TODO: Require alphanumeric, upper-, lowercase and special character(s)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password does not meet minimum password criteria.");
+        }
+
+        var encodedPassword = encoder.encode(passwordCandidate);
+
         User user = User.builder()
-            .passwordHash(input.getPassword())  // TODO: Hash!
-            .username(input.getUsername())
-            .email(input.getEmail())
-            .build();
+                .passwordHash(encodedPassword)
+                .username(input.getUsername())
+                .email(input.getEmail())
+                .activated(true)
+                .build();
 
         user.setStatus(UserStatus.ONLINE);
         return this.userRepository.saveAndFlush(user);
     }
 
     public User validateUser(LoginInput input) {
+        boolean passwordValid = false;
         User userByUsername = userRepository.findByUsername(input.getUsername());
 
-        //TODO: Cannot compare passwordhash to password !!!
-        if (userByUsername == null || Objects.equals(userByUsername.getPasswordHash(), input.getPassword())) {
+        if (userByUsername != null) {
+            passwordValid = encoder.matches(input.getPassword(), userByUsername.getPasswordHash());
+        } else {
+            encoder.matches(input.getPassword(), "ThisIsJustARandomPassword");
+        }
+
+        // TODO: For guest access or as a fallback if email verification doesn't work.
+//        User.builder()
+//                .id(UUID.randomUUID())
+//                .activated(true)
+//                .username("Tester")
+//                .passwordHash("<SET_ME>")
+//                .email("tester@oxv.io")
+//                .avatarID(null)
+//                .status(UserStatus.ONLINE)
+//                .build();
+
+        if (!passwordValid) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The username and password combination does not exist.");
         }
 
         userByUsername.setStatus(UserStatus.ONLINE);
         return userByUsername;
+    }
+
+    public UUID giveMeDaAuthToken(UUID userId) {
+        // TODO: Do it properly, maybe save session in redis?
+        return UUID.randomUUID();
     }
 }

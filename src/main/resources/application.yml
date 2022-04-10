@@ -9,9 +9,9 @@ spring:
       printer:
         enabled: true
     cors:
-      #allowed-methods: GET,POST
-      #allowed-headers: Content-Type, Authorization
       max-age: 1800s
+      exposed-headers: Authorization
+      allow-credentials: true
 
   datasource:
     driverClassName: org.postgresql.Driver
@@ -64,7 +64,7 @@ spring:
 
   graphql:
     cors:
-      allowed-origins: http://localhost:3000
+      allowed-origin-patterns: '*'
 
   redis:
     host: localhost
