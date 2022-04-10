@@ -43,12 +43,16 @@ spring:
   redis:
     url: ${REDIS_URL}
   jpa:
+    #    generate-ddl: true
     hibernate:
       ddl-auto: create-drop
 
   graphql:
     cors:
       allowed-origins: https://wordlepvp-frontend.oxv.io,https://www.oxv.io,https://oxv.io
+  sql:
+    init:
+      mode: always
 ---
 spring:
   config:
