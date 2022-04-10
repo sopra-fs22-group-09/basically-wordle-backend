@@ -43,9 +43,9 @@ spring:
   redis:
     url: ${REDIS_URL}
   jpa:
-    #    generate-ddl: true
-    hibernate:
-      ddl-auto: create-drop
+    generate-ddl: true
+#    hibernate:
+#      ddl-auto: create-drop
 
   graphql:
     cors:
