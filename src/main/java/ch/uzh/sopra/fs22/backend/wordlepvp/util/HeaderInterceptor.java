@@ -31,15 +31,16 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
     public Mono<WebGraphQlResponse> intercept(WebGraphQlRequest request, WebGraphQlInterceptor.Chain chain) {
         log.debug("Got Authorization header: {}", request.getHeaders().getFirst("Authorization"));
         return chain.next(request).publishOn(Schedulers.boundedElastic()).mapNotNull(response -> {
+            if (!response.getExecutionResult().isDataPresent()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             try {
-                Map<String, User> mappli = response.getData();
+                Map<String, User> map = response.getData();
                 User user = null;
-                if (mappli == null) return response;
-                if (mappli.containsKey("register")) {
-                    user = oMapper.convertValue(mappli.get("register"), User.class);
-                } else if (mappli.containsKey("login")) {
-                    user = oMapper.convertValue(mappli.get("login"), User.class);
+                if (map == null) return response;
+                if (map.containsKey("register")) {
+                    user = oMapper.convertValue(map.get("register"), User.class);
+                } else if (map.containsKey("login")) {
+                    user = oMapper.convertValue(map.get("login"), User.class);
                 }
                 if (user == null) return response;
                 String bearerToken = userService.giveMeDaAuthToken(user.getId()).toString();
