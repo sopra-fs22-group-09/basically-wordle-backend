@@ -1,17 +1,20 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
+import java.util.Objects;
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @Entity
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@RequiredArgsConstructor
 public class Score {
 
     @Id
@@ -20,6 +23,22 @@ public class Score {
     @Column(name = "id", length = 36, updatable = false, nullable = false)
     private UUID id;
 
+    @NonNull
     private GameMode mode;
-    private int score;
+
+    @NonNull
+    private Integer score;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        Score score = (Score) o;
+        return id != null && Objects.equals(id, score.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
