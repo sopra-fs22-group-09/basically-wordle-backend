@@ -9,15 +9,12 @@ spring:
       printer:
         enabled: true
     cors:
-      #allowed-methods: GET,POST
-      #allowed-headers: Content-Type, Authorization
       max-age: 1800s
+      exposed-headers: Authorization
+      allow-credentials: true
 
   datasource:
     driverClassName: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
   sql:
     init:
       platform: postgres
@@ -43,12 +40,16 @@ spring:
   redis:
     url: ${REDIS_URL}
   jpa:
+    generate-ddl: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
 
   graphql:
     cors:
       allowed-origins: https://wordlepvp-frontend.oxv.io,https://www.oxv.io,https://oxv.io
+  sql:
+    init:
+      mode: always
 ---
 spring:
   config:
@@ -64,7 +65,7 @@ spring:
 
   graphql:
     cors:
-      allowed-origins: http://localhost:3000
+      allowed-origin-patterns: '*'
 
   redis:
     host: localhost

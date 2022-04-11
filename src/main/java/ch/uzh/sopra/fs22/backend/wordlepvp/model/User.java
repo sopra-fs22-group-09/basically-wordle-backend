@@ -33,10 +33,11 @@ public class User implements Serializable {
     @Column(nullable = false, unique = true)
     private String email;
 
-//    @Column(name = "passwordHash", )
+    @Column(nullable = false)
     private String passwordHash;
 
-    @Column(nullable = false)
+    //    @Column(nullable = false)
+    @Column(nullable = true)
     private String avatarID;
 
     @OneToMany
@@ -50,20 +51,25 @@ public class User implements Serializable {
     //TODO: no kei klass ..
     //private Achievement[] achievements;
 
-    @Column(nullable = false)
+    //    @Column(nullable = false)
+    @Column
     private boolean tutorialCompleted;
 
     //TODO EIG JSON ..
-    @Column(nullable = false)
+//    @Column(nullable = false)
+    @Column(nullable = true)
     private String settings;
 
-    @Column(nullable = false)
+    //    @Column(nullable = false)
+    @Column(nullable = true)
     private UserStatus status;
 
+    //    @Column(nullable = false)
     @Column(nullable = false)
     private boolean activated;
 
-    @Column(nullable = false)
+    //    @Column(nullable = false)
+    @Column(nullable = true)
     private String resetToken;
 
     @Override

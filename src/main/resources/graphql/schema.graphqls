@@ -13,7 +13,7 @@ type Subscription {
     greetings: String
 }
 type User {
-    id: String!
+    id: ID!
     username: String!
     email: String!
     passwordHash: String!
