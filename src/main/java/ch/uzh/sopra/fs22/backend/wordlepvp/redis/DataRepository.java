@@ -25,7 +25,8 @@ public class DataRepository {
                 .name(input.getName())
                 .build();
 
-        redisTemplate.opsForValue().set(lobby.getId(), lobby);
+//        redisTemplate.opsForValue().set(lobby.getId(), lobby);
+
         return redisTemplate.opsForValue().get(lobby.getId());
     }
 
