@@ -18,6 +18,18 @@ spring:
   sql:
     init:
       platform: postgres
+
+  mail:
+    username: basicallywordle@outlook.com
+    port: 587
+    host: smtp-mail.outlook.com
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 ---
 spring:
   config:
