@@ -11,6 +11,8 @@ import org.springframework.graphql.data.method.annotation.SubscriptionMapping;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetInput;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetTokenInput;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
