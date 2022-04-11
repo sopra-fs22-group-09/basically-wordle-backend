@@ -51,8 +51,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-graphql'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	// TODO: Uncomment for simple email verification
-//	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	// https://mvnrepository.com/artifact/org.springframework.security/spring-security-crypto
+	implementation 'org.springframework.security:spring-security-crypto'
+
+	implementation 'org.bouncycastle:bcpkix-jdk18on:1.71'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.hibernate:hibernate-validator:7.0.4.Final'
 	//implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	compileOnly 'org.projectlombok:lombok'
@@ -104,7 +107,7 @@ sonarqube {
 		property "sonar.organization", "sopra-fs22-group-09"
 		property "sonar.host.url", "https://sonarcloud.io"
 		property "sonar.coverage.jacoco.xmlReportPaths", ["$buildDir/jacocoReportDir/test/jacocoTestReport.xml"]
-		property "sonar.cpd.exclusions", "**/entity/*.java,**/rest/dto/*.java"
+		property "sonar.cpd.exclusions", "**/model/*.java,**/validator/*.java,**/util/*.java"
 	}
 }
 
