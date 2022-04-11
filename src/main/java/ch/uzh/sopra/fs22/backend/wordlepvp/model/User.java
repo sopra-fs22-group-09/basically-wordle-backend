@@ -14,9 +14,7 @@ import java.util.UUID;
 @Setter
 @Entity
 @Builder
-@ToString
 @RequiredArgsConstructor
-@NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")  // because Postgres is stupid we should not use user without quotes, but we use plural anyways
 public class User implements Serializable {
@@ -41,11 +39,9 @@ public class User implements Serializable {
     private String avatarID;
 
     @OneToMany
-    @ToString.Exclude
     private Set<User> friends;
 
     @OneToMany
-    @ToString.Exclude
     private Set<Score> scores;
 
     //TODO: no kei klass ..
