@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.apache.commons.lang3.RandomStringUtils;
 
+import java.util.UUID;
+
 @Service
 @Transactional
 public class UserService {
@@ -74,6 +76,17 @@ public class UserService {
             encoder.matches(input.getPassword(), "ThisIsJustARandomPassword");
         }
 
+// TODO: For guest access or as a fallback if email verification doesn't work.
+//        User.builder()
+//                .id(UUID.randomUUID())
+//                .activated(true)
+//                .username("Tester")
+//                .passwordHash("<SET_ME>")
+//                .email("tester@oxv.io")
+//                .avatarID(null)
+//                .status(UserStatus.ONLINE)
+//                .build();
+
         if (!passwordValid) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The username and password combination does not exist.");
         }
@@ -110,5 +123,10 @@ public class UserService {
 
         userByResetToken.setPasswordHash(encodedPassword);
         userByResetToken.setResetToken(null);
+    }
+
+    public UUID giveMeDaAuthToken(UUID userId) {
+        // TODO: Do it properly, maybe save session in redis?
+        return UUID.randomUUID();
     }
 }
