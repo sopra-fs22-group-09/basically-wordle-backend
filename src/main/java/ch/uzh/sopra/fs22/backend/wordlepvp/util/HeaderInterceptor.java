@@ -31,7 +31,7 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
     public Mono<WebGraphQlResponse> intercept(WebGraphQlRequest request, WebGraphQlInterceptor.Chain chain) {
         log.debug("Got Authorization header: {}", request.getHeaders().getFirst("Authorization"));
         return chain.next(request).publishOn(Schedulers.boundedElastic()).mapNotNull(response -> {
-            if (!response.getExecutionResult().isDataPresent()) return response;
+            if (!response.getExecutionResult().isDataPresent() || !response.isValid()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             try {
                 /* FIXME: class graphql.execution.reactive.SubscriptionPublisher cannot be cast to class
