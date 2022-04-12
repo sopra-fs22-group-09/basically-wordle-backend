@@ -1,37 +1,46 @@
 #scalar Date
 type Query {
-    lobbyById(id: Int!): Lobby
-    greeting: String
-    greetingMono: String
-    greetingsFlux: [String]
+    #profileByUserId(id: Int!): User
+    #scores: [Score]
+    #settingsByUserId(id: Int!): UserSettings
+
+    joinLobbyById(id: Int!): Lobby
+
+    #concludeStats: [String]
 }
 type Mutation {
     register(input: RegisterInput!): User
     login(input: LoginInput!): User
-    addLobby(input: LobbyInput!): Lobby
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
+    #updateUserProfile(input: UserSettingsInput!): User
+
+    createLobby(input: LobbyInput!): Lobby
+    updateLobbySettings(gameSettings: GameSettingsInput!): GameSettings
+    #sendLobbyMessage(message: String!): String
+
+    #requestFriendByUserId(id: ID!): ID
+    #sendMessageToUserId(input: MessageInput!): Message
+
+    #startGame: GameMode #maybe we need smth
+    #submitGuess(word: String!): [[LetterState]]
+    playAgain: ID # I suggest we use the Lobby ID?
 }
 type Subscription {
-    lobbyFlux: Lobby
-    greetings: String
+    lobbyList: [Lobby]
+    lobby: Lobby
+    lobbyInvitations: ID
+    lobbyChat: Message
+
+    #friendStatus: User # I suggest we use player (and thus add status to the player..)
+    #friendRequest: ID # ID instead of User
+    #chatMessages: Message
+
+    #gameStatusChange: ID # I suggest we create an enum?
+    #lobbyReady: ID # I suggest we use the Lobby ID?
+    #opponentState: [OpponentGameState]
 }
-type User {
-    id: ID!
-    username: String!
-    email: String!
-    passwordHash: String!
-}
-type Lobby {
-    id: ID!
-    status: LobbyStatus!
-    owner: User!
-    size: Int!
-    name: String
-    gameCategory: GameCategory
-    gameMode: GameMode
-#    settings: GameSettings
-}
+#--------------------------------------------------
 input RegisterInput {
     username: String!
     email: String!
@@ -41,32 +50,6 @@ input LoginInput {
     username: String!
     password: String!
 }
-input LobbyInput {
-    name: String
-}
-enum GameCategory {
-    PvP
-    COOP
-    SOLO
-}
-enum GameMode {
-    Words_PP
-    SonicFast
-    TimeReset
-    Party
-    Challenge
-    Chain
-    Classic
-    InTime
-    PlayerVsAI
-    OneWord
-    WordCombination
-}
-enum LobbyStatus {
-    OPEN
-    FULL
-    INGAME
-}
 input ResetInput {
     email: String!
 }
@@ -74,7 +57,109 @@ input ResetTokenInput {
     resetToken: String!
     password: String!
 }
-type GameSettings {
-    wordLength: Int
+#input UserSettingsInput {
+#    avatarID: String!
+#    volume: Int!
+#    status: UserStatus!
+#    # ...
+#}
+
+input LobbyInput {
+    size: Int!
+    name: String!
+    gameCategory: GameCategory!
+}
+input GameSettingsInput {
+    gameMode: GameMode!
+    amountRounds: Int!
+    roundTime: Int!
+    # wordCategories: Categories ??? how
+}
+
+#input MessageInput {
+#    userId: ID!
+#    message: String!
+#}
+#--------------------------------------------------
+type User {
+    id: ID!
+    username: String!
+    email: String!
+    status: UserStatus!
+}
+type UserSettings {
+    avatarID: String!
+    volume: Int!
+    status: UserStatus!
     # ...
+}
+type Player {
+    id: ID!
+    name: String!
+    avatarID: String!
+}
+type Score {
+    mode: GameMode!
+    score: Int!
+}
+
+type Lobby {
+    id: ID!
+    status: LobbyStatus!
+    owner: User!
+    size: Int!
+    name: String!
+    gameCategory: GameCategory!
+    gameSettings: GameSettings!
+    lobbyMembers: [ID]!
+}
+type GameSettings {
+    gameMode: GameMode!
+    amountRounds: Int!
+    roundTime: Int!
+    # wordCategories: Categories ??? how
+}
+
+type Message {
+    userId: ID
+    message: String
+}
+
+#type OpponentGameState {
+#    playerID: ID
+#    words: [String] #kind of does not make sense? change to [[LetterState]] ???
+#}
+#--------------------------------------------------
+enum UserStatus {
+    ONLINE
+    AWAY
+}
+enum GameCategory {
+    PVP
+    COOP
+    SOLO
+}
+enum GameMode {
+    WORDSPP
+    SONICFAST
+    TIMERESET
+    PARTY
+    CHALLENGE
+    CHAIN
+    CLASSIC
+    INTIME
+    PLAYERVSAI
+    ONEWORD
+    WORDCOMBINATION
+}
+enum LobbyStatus {
+    OPEN
+    FULL
+    INGAME
+}
+enum LetterState {
+    UNKNOWN
+    CORRECTPOSITION
+    INWORD
+    WRONG
 }
