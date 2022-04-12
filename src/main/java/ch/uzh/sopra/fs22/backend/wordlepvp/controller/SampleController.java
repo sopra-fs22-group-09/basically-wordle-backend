@@ -4,10 +4,15 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.redis.DataRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SubscriptionMapping;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
-import org.springframework.graphql.data.method.annotation.*;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetInput;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetTokenInput;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
@@ -42,6 +47,19 @@ public class SampleController {
         //TODO: add header
 
         return this.userService.validateUser(input);
+    }
+
+    @MutationMapping
+    public void reset(@Argument @Valid ResetInput input) {
+
+        this.userService.resetPassword(input);
+
+    }
+
+    @MutationMapping
+    public void resetWithToken(@Argument @Valid ResetTokenInput input) {
+
+        this.userService.resetWithToken(input);
     }
 
     @QueryMapping

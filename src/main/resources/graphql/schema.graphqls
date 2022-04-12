@@ -9,6 +9,8 @@ type Mutation {
     register(input: RegisterInput!): User
     login(input: LoginInput!): User
     addLobby(input: LobbyInput!): Lobby
+    reset(input: ResetInput!): User
+    resetWithToken(input: ResetTokenInput!): User
 }
 type Subscription {
     lobbyFlux: Lobby
@@ -64,6 +66,13 @@ enum LobbyStatus {
     OPEN
     FULL
     INGAME
+}
+input ResetInput {
+    email: String!
+}
+input ResetTokenInput {
+    resetToken: String!
+    password: String!
 }
 type GameSettings {
     wordLength: Int
