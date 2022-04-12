@@ -34,6 +34,9 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
             if (!response.getExecutionResult().isDataPresent()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             try {
+                /* FIXME: class graphql.execution.reactive.SubscriptionPublisher cannot be cast to class
+                   java.util.Map (graphql.execution.reactive.SubscriptionPublisher is in unnamed module of loader 'app';
+                   java.util.Map is in module java.base of loader 'bootstrap') */
                 Map<String, User> map = response.getData();
                 User user = null;
                 if (map == null) return response;

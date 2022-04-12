@@ -1,39 +1,38 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.redis.core.RedisHash;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
-import java.io.Serial;
-import java.io.Serializable;
 
 @Data
 @Builder
-@RedisHash
+@ToString
+//@RedisHash("lobbies")
 @NoArgsConstructor
 @AllArgsConstructor
 public class Lobby implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
-
-    @NotNull
     @Id
     //TODO: Should be HashID
-    private Long id;
+    private String id;
+
+    @Version
+    private int version;
 
     private String name;
 
     private int size;
 
-    private UUID owner;
+    private User owner;
 
     private Set<User> players;
 
@@ -48,4 +47,10 @@ public class Lobby implements Serializable {
     private String settings;
 
     private LobbyStatus status;
+
+    @CreatedDate
+    private LocalDateTime createdDate;
+
+    @LastModifiedDate
+    private LocalDateTime lastUpdatedDate;
 }

@@ -1,3 +1,4 @@
+#scalar Date
 type Query {
     lobbyById(id: Int!): Lobby
     greeting: String
@@ -12,6 +13,7 @@ type Mutation {
     resetWithToken(input: ResetTokenInput!): User
 }
 type Subscription {
+    lobbyFlux: Lobby
     greetings: String
 }
 type User {
@@ -21,8 +23,14 @@ type User {
     passwordHash: String!
 }
 type Lobby {
-    id: Int!
+    id: ID!
+    status: LobbyStatus!
+    owner: User!
+    size: Int!
     name: String
+    gameCategory: GameCategory
+    gameMode: GameMode
+#    settings: GameSettings
 }
 input RegisterInput {
     username: String!
@@ -34,8 +42,30 @@ input LoginInput {
     password: String!
 }
 input LobbyInput {
-    id: Int!
-    name: String!
+    name: String
+}
+enum GameCategory {
+    PvP
+    COOP
+    SOLO
+}
+enum GameMode {
+    Words_PP
+    SonicFast
+    TimeReset
+    Party
+    Challenge
+    Chain
+    Classic
+    InTime
+    PlayerVsAI
+    OneWord
+    WordCombination
+}
+enum LobbyStatus {
+    OPEN
+    FULL
+    INGAME
 }
 input ResetInput {
     email: String!

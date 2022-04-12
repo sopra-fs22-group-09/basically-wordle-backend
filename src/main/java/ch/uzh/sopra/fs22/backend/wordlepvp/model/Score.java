@@ -3,8 +3,11 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 import lombok.*;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -28,6 +31,12 @@ public class Score {
 
     @NonNull
     private Integer score;
+
+    @CreatedDate
+    private LocalDateTime createdDate;
+
+    @LastModifiedDate
+    private LocalDateTime lastUpdatedDate;
 
     @Override
     public boolean equals(Object o) {

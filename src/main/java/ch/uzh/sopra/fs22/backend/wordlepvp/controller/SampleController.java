@@ -16,6 +16,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetTokenInput;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -61,16 +62,19 @@ public class SampleController {
         this.userService.resetWithToken(input);
     }
 
-
-
     @QueryMapping
     public Lobby lobbyById(@Argument @NotNull Long id) {
         return this.dataRepository.getLobbyById(id);
     }
 
     @MutationMapping
-    public Lobby addLobby(@Argument @Valid LobbyInput input) {
+    public Mono<Lobby> addLobby(@Argument @Valid LobbyInput input) {
         return this.dataRepository.saveLobby(input);
+    }
+
+    @SubscriptionMapping
+    public Flux<Lobby> lobbyFlux() {
+        return this.dataRepository.getLobbyStream();
     }
 
     @QueryMapping
