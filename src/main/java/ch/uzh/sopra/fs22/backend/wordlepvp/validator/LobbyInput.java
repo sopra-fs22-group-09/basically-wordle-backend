@@ -8,10 +8,7 @@ import javax.validation.constraints.NotNull;
 @Data
 public class LobbyInput {
 
-    @NotNull
-    private Long id;
-
-    @NotNull
+//    @NotNull
     @Length(min = 3, max = 50)
     private String name;
 }
