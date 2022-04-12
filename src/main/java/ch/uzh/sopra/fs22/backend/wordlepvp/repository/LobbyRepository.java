@@ -1,31 +1,27 @@
-package ch.uzh.sopra.fs22.backend.wordlepvp.redis;
+package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
 import java.util.UUID;
 
-// TODO: This serves purely as an example and we should eventually have one repository per entity.
-@Repository
-@RequiredArgsConstructor
-@EnableRedisRepositories
-public class DataRepository {
+@Component
+public class LobbyRepository {
 
-    private final RedisTemplate<Long, Lobby> redisTemplate;
-    private final ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate;
+    ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate;
 
-    public Lobby getLobbyById(Long id) {
-        return redisTemplate.opsForValue().get(id);
+    public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate) {
+        this.reactiveRedisTemplate = reactiveRedisTemplate;
+    }
+
+    public Mono<Lobby> getLobbyById(String id) {
+        return reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id);
     }
 
     public Mono<Lobby> saveLobby(LobbyInput input) {
@@ -52,18 +48,5 @@ public class DataRepository {
                 })
                 .log()
                 .map(ReactiveSubscription.Message::getMessage);
-    }
-
-    public Flux<String> getGreetings() {
-        return Mono.delay(Duration.ofMillis(500))
-                .flatMapMany(aLong -> Flux.just("Hi!", "Bonjour!", "Hola!", "Ciao!", "Zdravo!"));
-    }
-
-    public Flux<String> getGreetingsStream() {
-        return Mono.delay(Duration.ofMillis(2000))
-                .flatMapMany(aLong -> Flux
-                .just("Hi!", "Bonjour!", "Hola!", "Ciao!", "Zdravo!")
-                .log()
-                .delayElements(Duration.ofSeconds(2)));
     }
 }

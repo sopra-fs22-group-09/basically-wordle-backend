@@ -1,9 +1,7 @@
-package ch.uzh.sopra.fs22.backend.wordlepvp.redis;
+package ch.uzh.sopra.fs22.backend.wordlepvp;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.data.redis.LettuceClientConfigurationBuilderCustomizer;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -12,15 +10,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.data.redis.repository.support.RedisRepositoryFactoryBean;
-import org.springframework.data.redis.serializer.*;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @SuppressWarnings("CommentedOutCode")
 @Configuration
+@EnableRedisRepositories
 @ConfigurationProperties("spring.redis")
 @EnableConfigurationProperties(RedisProperties.class)
 public class RedisConfig {
@@ -44,40 +43,12 @@ public class RedisConfig {
         };
     }
 
-//    @Bean
-//    public RedisConnectionFactory redisConnectionFactory() {
-//        if (url != null)
-//            return new LettuceConnectionFactory(
-//                    LettuceConnectionFactory.createRedisConfiguration(this.url));
-//        return new LettuceConnectionFactory();
-//    }
-
-    // This works but will cause Redis to serialize using JdkSerializationRedisSerializer which ... is ugly.
-    // The potential solution can be found below
-    @Bean
-    public RedisTemplate<?, ?> redisTemplate(RedisConnectionFactory factory) {
-        RedisTemplate<?, ?> template = new RedisTemplate<>();
-        template.setConnectionFactory(factory);
-        // TODO: Add some specific configuration here. Key serializers, etc.
-        return template;
-    }
-
     // REACTIVE REDIS
-
-
-//    @Bean
-//    public ReactiveRedisConnectionFactory reactiveRedisConnectionFactory() {
-//        if (url != null)
-//            return new LettuceConnectionFactory(
-//                    LettuceConnectionFactory.createRedisConfiguration(this.url));
-//        return new LettuceConnectionFactory();
-//    }
 
     // This works but will cause Redis to serialize using JdkSerializationRedisSerializer which ... is ugly.
     // The potential solution can be found below
     @Bean
     public ReactiveRedisTemplate<String, ?> reactiveRedisTemplate(ReactiveRedisConnectionFactory factory, ResourceLoader resourceLoader) {
-//        ReactiveRedisTemplate<?, Object> template;
         // Add some specific configuration here. Key serializers, etc.
         StringRedisSerializer keySerializer = new StringRedisSerializer();
         JdkSerializationRedisSerializer valueSerializer = new JdkSerializationRedisSerializer(resourceLoader.getClassLoader());
@@ -90,7 +61,6 @@ public class RedisConfig {
                 .hashValue(valueSerializer)
                 .build();
         return new ReactiveRedisTemplate<>(factory, context);
-//        return template;
     }
 
     // TODO: Whoever can figure this out gets a beer (Bean "Class" can not be resolved)
