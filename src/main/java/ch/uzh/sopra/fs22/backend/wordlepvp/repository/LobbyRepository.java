@@ -27,7 +27,9 @@ public class LobbyRepository {
     public Mono<Lobby> saveLobby(LobbyInput input) {
         Lobby lobby = Lobby.builder()
                 .id(UUID.randomUUID().toString())
+                .gameCategory(input.getGameCategory())
                 .name(input.getName())
+                .size(input.getSize())
                 .build();
 
         return reactiveRedisTemplate.opsForHash().put("lobbies", lobby.getId(), lobby)
