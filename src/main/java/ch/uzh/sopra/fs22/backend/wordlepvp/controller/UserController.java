@@ -15,11 +15,11 @@ import javax.validation.Valid;
 
 @Validated
 @Controller
-public class SampleController {
+public class UserController {
 
     private final UserService userService;
 
-    public SampleController(UserService userService) {
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
