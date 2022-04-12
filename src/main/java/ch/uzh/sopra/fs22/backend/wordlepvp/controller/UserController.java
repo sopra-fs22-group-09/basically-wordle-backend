@@ -25,14 +25,18 @@ public class UserController {
 
     @MutationMapping
     public User register(@Argument @Valid RegisterInput input) {
-        //TODO: add header
         return this.userService.createUser(input);
     }
 
     @MutationMapping
     public User login(@Argument @Valid LoginInput input) {
-        //TODO: add header
         return this.userService.validateUser(input);
+    }
+
+    @MutationMapping
+    public User logout() {
+        this.userService.logout();
+        return null; //TODO
     }
 
     @MutationMapping

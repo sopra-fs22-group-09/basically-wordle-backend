@@ -95,6 +95,10 @@ public class UserService {
         return userByUsername;
     }
 
+    public void logout() {
+        User user = userRepository.findByToken("");
+    }
+
     public void resetPassword(ResetInput input) {
         User userByEmail = userRepository.findByEmail(input.getEmail());
 
