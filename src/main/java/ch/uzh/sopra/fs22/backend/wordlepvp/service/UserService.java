@@ -1,6 +1,5 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.EmailService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.UserStatus;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
@@ -12,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -95,14 +93,16 @@ public class UserService {
         return userByUsername;
     }
 
-    public void logout(String token) {
-        User user = null;
+    public boolean logout(String token) {
+        // TODO: Implement
+        User user = User.builder().username("john").build();
          if (user != null) {
              user.setStatus(UserStatus.OFFLINE);
              //user.give
          } else {
              throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
          }
+         return true;
     }
 
     public void resetPassword(ResetInput input) {
