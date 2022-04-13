@@ -6,12 +6,17 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetTokenInput;
+import graphql.ExecutionInput;
+import graphql.GraphQLContext;
 import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.ContextValue;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.Valid;
+import java.util.Map;
+import java.util.function.Consumer;
 
 @Validated
 @Controller
@@ -25,14 +30,24 @@ public class UserController {
 
     @MutationMapping
     public User register(@Argument @Valid RegisterInput input) {
-        //TODO: add header
         return this.userService.createUser(input);
     }
 
     @MutationMapping
     public User login(@Argument @Valid LoginInput input) {
-        //TODO: add header
         return this.userService.validateUser(input);
+    }
+
+    @MutationMapping
+    public User logout(GraphQLContext context) {
+        ExecutionInput executionInput = ExecutionInput.newExecutionInput("logout")
+                .context(context)
+                .build();
+
+
+        System.out.println("Authorization in UserController: " + executionInput.getExtensions());
+        //this.userService.logout(Authorization);
+        return User.builder().username("dummy").build(); //TODO
     }
 
     @MutationMapping

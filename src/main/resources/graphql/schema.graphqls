@@ -11,6 +11,7 @@ type Query {
 type Mutation {
     register(input: RegisterInput!): User
     login(input: LoginInput!): User
+    logout(test: String): User
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
     #updateUserProfile(input: UserSettingsInput!): User
