@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -29,7 +30,17 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
     @Override
     @SuppressWarnings("NullableProblems")
     public Mono<WebGraphQlResponse> intercept(WebGraphQlRequest request, WebGraphQlInterceptor.Chain chain) {
+
         log.debug("Got Authorization header: {}", request.getHeaders().getFirst("Authorization"));
+        request.configureExecutionInput((executionInput, builder) -> {
+            Map<String, Object> map = new HashMap<>() {
+                {
+                    put("Authorization", request.getHeaders().getFirst("Authorization"));
+                }
+            };
+            return builder.extensions(map).build();
+        });
+
         return chain.next(request).publishOn(Schedulers.boundedElastic()).mapNotNull(response -> {
             if (!response.getExecutionResult().isDataPresent() || !response.isValid()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

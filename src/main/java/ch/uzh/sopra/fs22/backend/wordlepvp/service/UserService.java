@@ -96,10 +96,10 @@ public class UserService {
     }
 
     public void logout(String token) {
-        User user = userRepository.findByToken(token);
+        User user = null;
          if (user != null) {
              user.setStatus(UserStatus.OFFLINE);
-             user.give
+             //user.give
          } else {
              throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
          }
