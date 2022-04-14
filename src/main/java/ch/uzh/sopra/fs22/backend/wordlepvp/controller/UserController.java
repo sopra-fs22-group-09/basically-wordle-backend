@@ -12,7 +12,6 @@ import org.springframework.graphql.data.method.annotation.ContextValue;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
-import reactor.util.context.Context;
 
 import javax.validation.Valid;
 
@@ -21,8 +20,6 @@ import javax.validation.Valid;
 public class UserController {
 
     private final UserService userService;
-
-    private static final String CONTEXT_VIEW = "org.springframework.graphql.execution.ReactorContextManager.CONTEXT_VIEW";
 
     public UserController(UserService userService) {
         this.userService = userService;
@@ -39,8 +36,8 @@ public class UserController {
     }
 
     @MutationMapping
-    public boolean logout(@ContextValue(name = CONTEXT_VIEW) Context ctx) {
-        String token = AuthorizationHelper.getAuthTokenFromContext(ctx);
+    public boolean logout(@ContextValue(name = "Authorization") String authHeader) {
+        String token = AuthorizationHelper.extractAuthToken(authHeader);
         return this.userService.logout(token);
     }
 
