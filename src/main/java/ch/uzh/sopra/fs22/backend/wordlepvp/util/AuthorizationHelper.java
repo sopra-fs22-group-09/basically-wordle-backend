@@ -1,5 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.util;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.util.context.Context;
 
@@ -12,7 +14,8 @@ public final class AuthorizationHelper {
         Optional<ServerWebExchange> swe = ctx.getOrEmpty(ServerWebExchange.class);
         if (swe.isPresent())
             authHeader = swe.get().getRequest().getHeaders().get("authorization");
-        if (authHeader == null || authHeader.isEmpty()) return null;
+        if (authHeader == null || authHeader.isEmpty())
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You have to log in to access this resource.");
         return authHeader.get(0).replace("Bearer ", "");
     }
 }

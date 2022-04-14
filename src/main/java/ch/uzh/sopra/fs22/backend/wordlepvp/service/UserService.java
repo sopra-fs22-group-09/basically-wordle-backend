@@ -95,10 +95,10 @@ public class UserService {
 
     public boolean logout(String token) {
         // TODO: Implement
-        User user = User.builder().username("john").build();
+        User user = User.builder().username("john").build(); // Get user from redis
          if (user != null) {
              user.setStatus(UserStatus.OFFLINE);
-             //user.give
+             //TODO Delete from Redis
          } else {
              throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
          }
