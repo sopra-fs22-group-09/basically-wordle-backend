@@ -40,7 +40,7 @@ public class UserController {
 
     @MutationMapping
     public boolean logout(@ContextValue(name = CONTEXT_VIEW) Context ctx) {
-        var token = AuthorizationHelper.getAuthTokenFromContext(ctx);
+        String token = AuthorizationHelper.getAuthTokenFromContext(ctx);
         return this.userService.logout(token);
     }
 
