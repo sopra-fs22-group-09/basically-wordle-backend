@@ -33,8 +33,9 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
 
         var authHeader = request.getHeaders().getFirst("Authorization");
         log.debug("Got Authorization header: {}", authHeader);
-        request.configureExecutionInput((executionInput, builder) ->
-                builder.graphQLContext(Collections.singletonMap("Authorization", authHeader)).build());
+        if (authHeader != null)
+            request.configureExecutionInput((executionInput, builder) ->
+                    builder.graphQLContext(Collections.singletonMap("Authorization", authHeader)).build());
         return chain.next(request).publishOn(Schedulers.boundedElastic()).mapNotNull(response -> {
             if (!response.getExecutionResult().isDataPresent() || !response.isValid()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
