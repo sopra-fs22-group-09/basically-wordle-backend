@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,14 +24,11 @@ import java.util.UUID;
 @Service
 @Transactional
 public class UserService {
-
     private final Logger log = LoggerFactory.getLogger(UserService.class);
-
     private final UserRepository userRepository;
-
     private final Argon2PasswordEncoder encoder = new Argon2PasswordEncoder();
-
     private final EmailService emailService;
+    ReactiveRedisTemplate<UUID, UUID> reactiveRedisTemplate;
 
     @Autowired
     public UserService(@Qualifier("userRepository") UserRepository userRepository, EmailService emailService) {
@@ -38,29 +36,24 @@ public class UserService {
         this.emailService = emailService;
     }
 
-
-
     public User createUser(RegisterInput input) {
         if (this.userRepository.findByUsername(input.getUsername()) != null)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This username is already taken.");
 
-        var passwordCandidate = input.getPassword();
-
-        if (passwordCandidate.length() < 5) {
-            // TODO: Require alphanumeric, upper-, lowercase and special character(s)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password does not meet minimum password criteria.");
-        }
-
-        var encodedPassword = encoder.encode(passwordCandidate);
+        String passwordCandidate = input.getPassword();
+        validateNewPassword(passwordCandidate);
+        String encodedPassword = encoder.encode(passwordCandidate);
 
         User user = User.builder()
-                .passwordHash(encodedPassword)
                 .username(input.getUsername())
+                .passwordHash(encodedPassword)
                 .email(input.getEmail())
-                .activated(true)
+                .activated(true) // TODO only for production, remove before release!
                 .build();
 
         user.setStatus(UserStatus.ONLINE);
+        // TODO Redis entry <Token, UUID_USER>
+        //  --> Do it in HeaderInceptor since you can insert the token directly into the header from there
         return this.userRepository.saveAndFlush(user);
     }
 
@@ -75,27 +68,29 @@ public class UserService {
         }
 
 // TODO: For guest access or as a fallback if email verification doesn't work.
-//        User.builder()
-//                .id(UUID.randomUUID())
-//                .activated(true)
-//                .username("Tester")
-//                .passwordHash("<SET_ME>")
-//                .email("tester@oxv.io")
-//                .avatarID(null)
-//                .status(UserStatus.ONLINE)
-//                .build();
+/*
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .activated(true)
+                .username("Tester")
+                .passwordHash("<SET_ME>")
+                .email("tester@oxv.io")
+                .avatarID(null)
+                .status(UserStatus.ONLINE)
+                .build();
+*/
 
-        if (!passwordValid) {
+        if (!passwordValid)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The username and password combination does not exist.");
-        }
 
         userByUsername.setStatus(UserStatus.ONLINE);
+        // TODO Redis entry <Token, UUID_USER>
+        //  --> Do it in HeaderInceptor since you can insert the token directly into the header from there
         return userByUsername;
     }
 
     public boolean logout(String token) {
-        // TODO: Implement
-        User user = User.builder().username("john").build(); // Get user from redis
+        User user = User.builder().username("john").build(); // TODO Get user from redis
          if (user != null) {
              user.setStatus(UserStatus.OFFLINE);
              //TODO Delete from Redis
@@ -107,30 +102,27 @@ public class UserService {
 
     public void resetPassword(ResetInput input) {
         User userByEmail = userRepository.findByEmail(input.getEmail());
+        boolean production = true; // TODO Do it with Spring Profile
+        String url = production ? "http://localhost:3000" : "https://oxv.io";
 
-        if (userByEmail == null) {
-            return;
+        if (userByEmail != null) {
+            String resetToken = RandomStringUtils.random(48,true,true); // TODO Maybe random UUID?
+            userByEmail.setResetToken(resetToken);
+            emailService.sendSimpleMessage(userByEmail.getEmail(), "Password Reset",
+                    String.format("Hi {},\r\nPlease go to {}/reset/tokenEntry and enter the following code to reset your password:\r\n{}",
+                            userByEmail.getUsername(), url, resetToken));
         }
-        String resetToken = RandomStringUtils.random(48,true,true);
-        userByEmail.setResetToken(resetToken);
-        emailService.sendSimpleMessage(userByEmail.getEmail(), "Password Reset", "Hi " + userByEmail.getUsername() + ",\n\nplease go to http://localhost:3000/reset/tokenEntry and enter the following code to reset your password:\n\n" + resetToken);
     }
 
     public void resetWithToken(ResetTokenInput input) {
         User userByResetToken = userRepository.findByResetToken(input.getResetToken());
+        String passwordCandidate = input.getPassword();
 
-        var passwordCandidate = input.getPassword();
-
-        if (userByResetToken == null || input.getResetToken() == null) {
+        if (userByResetToken == null || input.getResetToken() == null)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The entered reset token is invalid.");
-        }
-        if (passwordCandidate.length() < 5) {
-            // TODO: Require alphanumeric, upper-, lowercase and special character(s)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password does not meet minimum password criteria.");
-        }
 
-        var encodedPassword = encoder.encode(passwordCandidate);
-
+        validateNewPassword(passwordCandidate);
+        String encodedPassword = encoder.encode(passwordCandidate);
         userByResetToken.setPasswordHash(encodedPassword);
         userByResetToken.setResetToken(null);
     }
@@ -138,5 +130,33 @@ public class UserService {
     public UUID giveMeDaAuthToken(UUID userId) {
         // TODO: Do it properly, maybe save session in redis?
         return UUID.randomUUID();
+    }
+
+    private void setAuthToken(User user) {
+        //TODO How does this work? --> CopyPasted from LobbyRepository
+        reactiveRedisTemplate.opsForHash().put(UUID.randomUUID(), UUID.randomUUID(), user.getId());
+
+    }
+
+    private void validateNewPassword(String newPassword) {
+        boolean digit = false;
+        boolean uppercase = false;
+        boolean lowercase = false;
+        boolean specialCharacters = false;
+
+        if (newPassword.length() < 5) {
+            for (int i = 0; i < newPassword.length(); ++i) {
+                // TODO Exit condition?
+                // TODO better with regex?
+                lowercase = lowercase || ((int) newPassword.charAt(i) >= 97 && (int) newPassword.charAt(i) <= 122);
+                uppercase = uppercase || ((int) newPassword.charAt(i) >= 65 && (int) newPassword.charAt(i) <= 90);
+                digit = digit || ((int) newPassword.charAt(i) >= 48 && (int) newPassword.charAt(i) <= 57);
+                specialCharacters = specialCharacters || ((int) newPassword.charAt(i) >= 58 && (int) newPassword.charAt(i) <= 64) ||
+                        ((int) newPassword.charAt(i) >= 91 && (int) newPassword.charAt(i) <= 96) ||
+                        ((int) newPassword.charAt(i) >= 123 && (int) newPassword.charAt(i) <= 126);
+            }
+        }
+        if (!(digit && uppercase && lowercase && specialCharacters))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password does not meet minimum password criteria.");
     }
 }

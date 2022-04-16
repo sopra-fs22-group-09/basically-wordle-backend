@@ -18,9 +18,7 @@ import javax.validation.Valid;
 @Validated
 @Controller
 public class UserController {
-
     private final UserService userService;
-
     public UserController(UserService userService) {
         this.userService = userService;
     }
@@ -37,17 +35,17 @@ public class UserController {
 
     @MutationMapping
     public boolean logout(@ContextValue(name = "Authorization") String authHeader) {
-        String token = AuthorizationHelper.extractAuthToken(authHeader);
+        String token = AuthorizationHelper.extractAuthToken(authHeader); // TODO review pending...
         return this.userService.logout(token);
     }
 
     @MutationMapping
-    public void reset(@Argument @Valid ResetInput input) {
+    public void reset(@Argument @Valid ResetInput input) { // TODO why does a mutation return void?
         this.userService.resetPassword(input);
     }
 
     @MutationMapping
-    public void resetWithToken(@Argument @Valid ResetTokenInput input) {
+    public void resetWithToken(@Argument @Valid ResetTokenInput input) { // TODO why does a mutation return void?
         this.userService.resetWithToken(input);
     }
 }

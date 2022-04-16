@@ -23,7 +23,7 @@ public class LobbyRepository {
         this.reactiveRedisTemplate = reactiveRedisTemplate;
     }
 
-    public Mono<Lobby> saveLobby(LobbyInput input) {
+    public Mono<Lobby> saveLobby(LobbyInput input) { // TODO Authorization
 
         Lobby lobby = Lobby.builder()
                 .id(UUID.randomUUID().toString())
@@ -41,7 +41,7 @@ public class LobbyRepository {
                 .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbysettings", lobby).subscribe());
     }
 
-    public Mono<Lobby> playerJoinLobby(String id) {
+    public Mono<Lobby> playerJoinLobby(String id) { // TODO Authorization
 
         return reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
                 .mapNotNull(l -> {
@@ -57,7 +57,7 @@ public class LobbyRepository {
         //return reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id);
     }
 
-    public Flux<Lobby> getLobbyStream() {
+    public Flux<Lobby> getLobbyStream() { // TODO Authorization
 //        return reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", 13L).flux();
         return this.reactiveRedisTemplate
                 // TODO: Replace with pattern syntax 'lobby*'
