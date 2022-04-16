@@ -10,12 +10,12 @@ import javax.validation.constraints.NotNull;
 public class LobbyInput {
 
     @NotNull
-    private GameCategory gameCategory;
-
-    @NotNull
     @Length(min = 3, max = 50)
     private String name;
 
     @NotNull
     private Integer size;
+
+    @NotNull
+    private GameCategory gameCategory;
 }
