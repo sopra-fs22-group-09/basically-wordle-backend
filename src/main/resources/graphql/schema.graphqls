@@ -1,10 +1,8 @@
 #scalar Date
 type Query {
-    #profileByUserId(id: Int!): User
+    profileByUserId(id: Int!): User
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
-
-    joinLobbyById(id: Int!): Lobby
 
     #concludeStats: [String]
 }
@@ -17,6 +15,7 @@ type Mutation {
     #updateUserProfile(input: UserSettingsInput!): User
 
     createLobby(input: LobbyInput!): Lobby
+    joinLobbyById(id: String!): Lobby
     updateLobbySettings(gameSettings: GameSettingsInput!): GameSettings
     #sendLobbyMessage(message: String!): String
 
@@ -106,13 +105,13 @@ type Score {
 
 type Lobby {
     id: ID!
-    status: LobbyStatus!
-    owner: User!
-    size: Int!
     name: String!
+    size: Int!
+    owner: User!
+    status: LobbyStatus!
     gameCategory: GameCategory!
     gameSettings: GameSettings!
-    lobbyMembers: [ID]!
+    players: [User]!
 }
 type GameSettings {
     gameMode: GameMode!

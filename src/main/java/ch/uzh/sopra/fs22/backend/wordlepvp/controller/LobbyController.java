@@ -6,6 +6,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SubscriptionMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -24,6 +25,11 @@ public class LobbyController {
     @MutationMapping
     public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input) {
         return this.lobbyRepository.saveLobby(input);
+    }
+
+    @MutationMapping
+    public Mono<Lobby> joinLobbyById(@Argument @Valid String id) {
+        return this.lobbyRepository.playerJoinLobby(id);
     }
 
     @SubscriptionMapping
