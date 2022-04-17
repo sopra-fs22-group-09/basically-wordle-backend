@@ -34,7 +34,7 @@ public class UserService {
     private final Argon2PasswordEncoder encoder = new Argon2PasswordEncoder();
     private final EmailService emailService;
 
-    @Value("${spring.profiles.active}")
+    @Value("${spring.profiles.active:}")
     private String activeProfile;
 
     @Autowired

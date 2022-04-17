@@ -15,9 +15,9 @@ import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.data.redis.repository.support.RedisRepositoryFactoryBean;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.*;
+
+import java.util.UUID;
 
 @SuppressWarnings("CommentedOutCode")
 @Configuration
@@ -46,10 +46,15 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<?, ?> redisTemplate(RedisConnectionFactory factory) {
-        RedisTemplate<?, ?> template = new RedisTemplate<>();
+    public RedisTemplate<String, UUID> redisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<String, UUID> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
-        // TODO: Add some specific configuration here. Key serializers, etc.
+        StringRedisSerializer stringSerializer = new StringRedisSerializer();
+        RedisSerializer<UUID> uuidSerializer = new Jackson2JsonRedisSerializer<>(UUID.class);
+        template.setKeySerializer(stringSerializer);
+        template.setValueSerializer(uuidSerializer);
+        template.setHashKeySerializer(stringSerializer);
+        template.setHashValueSerializer(uuidSerializer);
         return template;
     }
 
@@ -77,7 +82,7 @@ public class RedisConfig {
 //    @Bean("redisTemplate")
 //    @Autowired
 //    public <T, V> RedisTemplate<T, V> redisTemplate(final Class<V> clazz, RedisConnectionFactory redisConnectionFactory) {
-//        // The generic type is changed to String Object, which is convenient to use
+//        // The generic type is changed to Generic Types T and V, which are "convenient" to use
 //        RedisTemplate<T, V> redisTemplate = new RedisTemplate<>();
 //        redisTemplate.setConnectionFactory(redisConnectionFactory);
 //        // Json serialization configuration
