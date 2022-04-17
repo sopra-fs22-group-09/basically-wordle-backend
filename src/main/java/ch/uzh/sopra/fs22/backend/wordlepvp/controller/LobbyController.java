@@ -23,17 +23,17 @@ public class LobbyController {
     private final LobbyRepository lobbyRepository;
 
     @MutationMapping
-    public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input) {
+    public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input) { // TODO Authorization
         return this.lobbyRepository.saveLobby(input);
     }
 
     @MutationMapping
-    public Mono<Lobby> joinLobbyById(@Argument @Valid String id) {
+    public Mono<Lobby> joinLobbyById(@Argument @Valid String id) { // TODO Authorization
         return this.lobbyRepository.playerJoinLobby(id);
     }
 
     @SubscriptionMapping
-    public Flux<Lobby> lobby() {
+    public Flux<Lobby> lobby() { // TODO Authorization
         return this.lobbyRepository.getLobbyStream();
     }
 }

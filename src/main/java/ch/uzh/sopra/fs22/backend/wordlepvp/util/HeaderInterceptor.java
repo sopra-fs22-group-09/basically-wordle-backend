@@ -30,12 +30,12 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
     @Override
     @SuppressWarnings("NullableProblems")
     public Mono<WebGraphQlResponse> intercept(WebGraphQlRequest request, WebGraphQlInterceptor.Chain chain) {
-
-        var authHeader = request.getHeaders().getFirst("Authorization");
+        String authHeader = request.getHeaders().getFirst("Authorization");
         log.debug("Got Authorization header: {}", authHeader);
         if (authHeader != null)
             request.configureExecutionInput((executionInput, builder) ->
                     builder.graphQLContext(Collections.singletonMap("Authorization", authHeader)).build());
+
         return chain.next(request).publishOn(Schedulers.boundedElastic()).mapNotNull(response -> {
             if (!response.getExecutionResult().isDataPresent() || !response.isValid()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -52,7 +52,7 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
                     user = oMapper.convertValue(map.get("login"), User.class);
                 }
                 if (user == null) return response;
-                String bearerToken = userService.giveMeDaAuthToken(user.getId()).toString();
+                String bearerToken = this.userService.authorize(user);
                 response.getResponseHeaders().setBearerAuth(bearerToken);
                 log.debug("Set Authorization header: {}", response.getResponseHeaders().getFirst("Authorization"));
             } catch (Exception e) {
