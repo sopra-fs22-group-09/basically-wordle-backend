@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PlayerRepository {
 
-    ReactiveRedisTemplate<String, ?> reactiveRedisTemplate;
+    private ReactiveRedisTemplate<String, ?> reactiveRedisTemplate;
 
     public PlayerRepository(ReactiveRedisTemplate<String, ?> reactiveRedisTemplate) {
         this.reactiveRedisTemplate = reactiveRedisTemplate;

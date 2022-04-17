@@ -1,6 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.UserStatus;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.AuthRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
@@ -11,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
@@ -19,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.apache.commons.lang3.RandomStringUtils;
 
+import javax.persistence.EntityNotFoundException;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -26,13 +30,17 @@ import java.util.UUID;
 public class UserService {
     private final Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
+    private final AuthRepository authRepository;
     private final Argon2PasswordEncoder encoder = new Argon2PasswordEncoder();
     private final EmailService emailService;
-    ReactiveRedisTemplate<UUID, UUID> reactiveRedisTemplate;
+
+    @Value("${spring.profiles.active}")
+    private String activeProfile;
 
     @Autowired
-    public UserService(@Qualifier("userRepository") UserRepository userRepository, EmailService emailService) {
+    public UserService(@Qualifier("userRepository") UserRepository userRepository, AuthRepository authRepository, EmailService emailService) {
         this.userRepository = userRepository;
+        this.authRepository = authRepository;
         this.emailService = emailService;
     }
 
@@ -52,8 +60,6 @@ public class UserService {
                 .build();
 
         user.setStatus(UserStatus.ONLINE);
-        // TODO Redis entry <Token, UUID_USER>
-        //  --> Do it in HeaderInceptor since you can insert the token directly into the header from there
         return this.userRepository.saveAndFlush(user);
     }
 
@@ -84,32 +90,30 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The username and password combination does not exist.");
 
         userByUsername.setStatus(UserStatus.ONLINE);
-        // TODO Redis entry <Token, UUID_USER>
-        //  --> Do it in HeaderInceptor since you can insert the token directly into the header from there
         return userByUsername;
     }
 
     public boolean logout(String token) {
-        User user = User.builder().username("john").build(); // TODO Get user from redis
-         if (user != null) {
-             user.setStatus(UserStatus.OFFLINE);
-             //TODO Delete from Redis
-         } else {
-             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
-         }
-         return true;
+        User user;
+        try {
+            user = userRepository.getReferenceById(authRepository.getUserID(token));
+        } catch (EntityNotFoundException ignored) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
+        }
+        user.setStatus(UserStatus.OFFLINE);
+        authRepository.expire(token);
+        return true;
     }
 
     public void resetPassword(ResetInput input) {
         User userByEmail = userRepository.findByEmail(input.getEmail());
-        boolean production = true; // TODO Do it with Spring Profile
-        String url = production ? "http://localhost:3000" : "https://oxv.io";
+        String url = Objects.equals(activeProfile, "prod") ? "https://oxv.io" : "http://localhost:3000";
 
         if (userByEmail != null) {
             String resetToken = RandomStringUtils.random(48,true,true); // TODO Maybe random UUID?
             userByEmail.setResetToken(resetToken);
             emailService.sendSimpleMessage(userByEmail.getEmail(), "Password Reset",
-                    String.format("Hi {},\r\nPlease go to {}/reset/tokenEntry and enter the following code to reset your password:\r\n{}",
+                    String.format("Hi %s,\r\nPlease go to %s/reset/tokenEntry and enter the following code to reset your password:\r\n%s",
                             userByEmail.getUsername(), url, resetToken));
         }
     }
@@ -127,15 +131,8 @@ public class UserService {
         userByResetToken.setResetToken(null);
     }
 
-    public UUID giveMeDaAuthToken(UUID userId) {
-        // TODO: Do it properly, maybe save session in redis?
-        return UUID.randomUUID();
-    }
-
-    private void setAuthToken(User user) {
-        //TODO How does this work? --> CopyPasted from LobbyRepository
-        reactiveRedisTemplate.opsForHash().put(UUID.randomUUID(), UUID.randomUUID(), user.getId());
-
+    public String authorize(User user) {
+        return authRepository.setAuthToken(user);
     }
 
     private void validateNewPassword(String newPassword) {
@@ -144,9 +141,9 @@ public class UserService {
         boolean lowercase = false;
         boolean specialCharacters = false;
 
-        if (newPassword.length() < 5) {
+        if (newPassword.length() >= 5 && newPassword.length() <= 50) {
             for (int i = 0; i < newPassword.length(); ++i) {
-                // TODO Exit condition?
+                // TODO exit condition?
                 // TODO better with regex?
                 lowercase = lowercase || ((int) newPassword.charAt(i) >= 97 && (int) newPassword.charAt(i) <= 122);
                 uppercase = uppercase || ((int) newPassword.charAt(i) >= 65 && (int) newPassword.charAt(i) <= 90);

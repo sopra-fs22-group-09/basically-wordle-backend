@@ -35,8 +35,7 @@ public class UserController {
 
     @MutationMapping
     public boolean logout(@ContextValue(name = "Authorization") String authHeader) {
-        String token = AuthorizationHelper.extractAuthToken(authHeader); // TODO review pending...
-        return this.userService.logout(token);
+        return this.userService.logout(AuthorizationHelper.extractAuthToken(authHeader));
     }
 
     @MutationMapping

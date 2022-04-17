@@ -3,7 +3,6 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
-import org.hibernate.mapping.Collection;
 import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -12,12 +11,11 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class LobbyRepository {
 
-    ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate;
+    private ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate;
 
     public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate) {
         this.reactiveRedisTemplate = reactiveRedisTemplate;

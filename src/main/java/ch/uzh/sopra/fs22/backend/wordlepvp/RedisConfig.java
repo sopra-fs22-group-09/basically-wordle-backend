@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.data.redis.repository.support.RedisRepositoryFactoryBean;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
@@ -41,6 +43,14 @@ public class RedisConfig {
                 clientConfigurationBuilder.useSsl().disablePeerVerification();
             }
         };
+    }
+
+    @Bean
+    public RedisTemplate<?, ?> redisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<?, ?> template = new RedisTemplate<>();
+        template.setConnectionFactory(factory);
+        // TODO: Add some specific configuration here. Key serializers, etc.
+        return template;
     }
 
     // REACTIVE REDIS

@@ -52,7 +52,7 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
                     user = oMapper.convertValue(map.get("login"), User.class);
                 }
                 if (user == null) return response;
-                String bearerToken = userService.giveMeDaAuthToken(user.getId()).toString();
+                String bearerToken = this.userService.authorize(user);
                 response.getResponseHeaders().setBearerAuth(bearerToken);
                 log.debug("Set Authorization header: {}", response.getResponseHeaders().getFirst("Authorization"));
             } catch (Exception e) {
