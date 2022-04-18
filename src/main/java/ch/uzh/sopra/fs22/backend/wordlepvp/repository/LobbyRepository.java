@@ -3,7 +3,6 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
-import org.hibernate.mapping.Collection;
 import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -12,18 +11,17 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class LobbyRepository {
 
-    ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate;
+    private ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate;
 
     public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate) {
         this.reactiveRedisTemplate = reactiveRedisTemplate;
     }
 
-    public Mono<Lobby> saveLobby(LobbyInput input) {
+    public Mono<Lobby> saveLobby(LobbyInput input) { // TODO Authorization
 
         Lobby lobby = Lobby.builder()
                 .id(UUID.randomUUID().toString())
@@ -41,7 +39,7 @@ public class LobbyRepository {
                 .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbysettings", lobby).subscribe());
     }
 
-    public Mono<Lobby> playerJoinLobby(String id) {
+    public Mono<Lobby> playerJoinLobby(String id) { // TODO Authorization
 
         return reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
                 .mapNotNull(l -> {
@@ -57,7 +55,7 @@ public class LobbyRepository {
         //return reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id);
     }
 
-    public Flux<Lobby> getLobbyStream() {
+    public Flux<Lobby> getLobbyStream() { // TODO Authorization
 //        return reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", 13L).flux();
         return this.reactiveRedisTemplate
                 // TODO: Replace with pattern syntax 'lobby*'

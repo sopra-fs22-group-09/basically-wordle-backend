@@ -4,11 +4,13 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.graphql.server.WebGraphQlInterceptor;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
+import org.springframework.graphql.server.WebSocketGraphQlInterceptor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -17,7 +19,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @Component
-public class HeaderInterceptor implements WebGraphQlInterceptor {
+public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
 
     private final Logger log = LoggerFactory.getLogger(HeaderInterceptor.class);
 
@@ -30,12 +32,12 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
     @Override
     @SuppressWarnings("NullableProblems")
     public Mono<WebGraphQlResponse> intercept(WebGraphQlRequest request, WebGraphQlInterceptor.Chain chain) {
-
-        var authHeader = request.getHeaders().getFirst("Authorization");
+        String authHeader = request.getHeaders().getFirst("Authorization");
         log.debug("Got Authorization header: {}", authHeader);
         if (authHeader != null)
             request.configureExecutionInput((executionInput, builder) ->
                     builder.graphQLContext(Collections.singletonMap("Authorization", authHeader)).build());
+
         return chain.next(request).publishOn(Schedulers.boundedElastic()).mapNotNull(response -> {
             if (!response.getExecutionResult().isDataPresent() || !response.isValid()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -52,7 +54,7 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
                     user = oMapper.convertValue(map.get("login"), User.class);
                 }
                 if (user == null) return response;
-                String bearerToken = userService.giveMeDaAuthToken(user.getId()).toString();
+                String bearerToken = this.userService.authorize(user);
                 response.getResponseHeaders().setBearerAuth(bearerToken);
                 log.debug("Set Authorization header: {}", response.getResponseHeaders().getFirst("Authorization"));
             } catch (Exception e) {
@@ -60,5 +62,15 @@ public class HeaderInterceptor implements WebGraphQlInterceptor {
             }
             return response;
         });
+    }
+
+    // ONLY FOR WEBSOCKET CONNECTIONS!
+    @Override
+    public @NonNull Mono<Object> handleConnectionInitialization(@NonNull String sessionId, @NonNull Map<String, Object> connectionInitPayload) {
+        // TODO: Something...
+
+
+        // This gets returned to the client ...
+        return Mono.empty();
     }
 }
