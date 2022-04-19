@@ -4,19 +4,17 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.graphql.server.WebGraphQlInterceptor;
-import org.springframework.graphql.server.WebGraphQlRequest;
-import org.springframework.graphql.server.WebGraphQlResponse;
-import org.springframework.graphql.server.WebSocketGraphQlInterceptor;
+import org.springframework.graphql.server.*;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
@@ -32,15 +30,22 @@ public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
     @Override
     @SuppressWarnings("NullableProblems")
     public Mono<WebGraphQlResponse> intercept(WebGraphQlRequest request, WebGraphQlInterceptor.Chain chain) {
-        String authHeader = request.getHeaders().getFirst("Authorization");
+        String authHeader;
+
+        if (request instanceof WebSocketGraphQlRequest) {
+            authHeader = String.valueOf(((WebSocketGraphQlRequest) request).getSessionInfo().getAttributes().getOrDefault("Authorization", "null"));
+        } else {
+            authHeader = request.getHeaders().getFirst("Authorization");
+        }
         log.debug("Got Authorization header: {}", authHeader);
-        if (authHeader != null)
+        if (authHeader != null && !authHeader.equals("null"))
             request.configureExecutionInput((executionInput, builder) ->
                     builder.graphQLContext(Collections.singletonMap("Authorization", authHeader)).build());
 
         return chain.next(request).publishOn(Schedulers.boundedElastic()).mapNotNull(response -> {
             if (!response.getExecutionResult().isDataPresent() || !response.isValid()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//            if (response.getExecutionResult().isDataPresent()) {
             try {
                 /* FIXME: class graphql.execution.reactive.SubscriptionPublisher cannot be cast to class
                    java.util.Map (graphql.execution.reactive.SubscriptionPublisher is in unnamed module of loader 'app';
@@ -65,12 +70,14 @@ public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
     }
 
     // ONLY FOR WEBSOCKET CONNECTIONS!
+
     @Override
-    public @NonNull Mono<Object> handleConnectionInitialization(@NonNull String sessionId, @NonNull Map<String, Object> connectionInitPayload) {
-        // TODO: Something...
-
-
-        // This gets returned to the client ...
-        return Mono.empty();
+    public @NonNull Mono<Object> handleConnectionInitialization(@NonNull WebSocketSessionInfo sessionInfo, @NonNull Map<String, Object> connectionInitPayload) {
+        // FIXME: This seems fishy and should be gracefully handled!
+        String authHeader = String.valueOf(connectionInitPayload.get("Authorization"));
+        if (!Objects.equals(authHeader, "null")) {
+            sessionInfo.getAttributes().put("Authorization", authHeader);
+        }
+        return WebSocketGraphQlInterceptor.super.handleConnectionInitialization(sessionInfo, connectionInitPayload);
     }
 }

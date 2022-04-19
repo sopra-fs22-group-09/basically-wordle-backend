@@ -41,8 +41,8 @@ public class LobbyController {
     }
 
     @SubscriptionMapping
-    public Flux<Lobby> lobby() { // TODO Authorization
-        User player = userService.getFromToken("30987907-5866-49f8-bdf3-e8ca2008c300");
+    public Flux<Lobby> lobby(@ContextValue("Authorization") String authHeader) { // TODO Authorization
+        User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.lobbyRepository.getLobbyStream(player);
     }
 

@@ -1,13 +1,14 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.UserStatus;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.AuthRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetTokenInput;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,12 +19,9 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import org.apache.commons.lang3.RandomStringUtils;
 
-import javax.persistence.EntityNotFoundException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -135,13 +133,26 @@ public class UserService {
         try {
             user = userRepository.findById(authRepository.getUserID(token));
             if (user.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The requested action could not be completed.");
             }
-        } catch (IllegalArgumentException ignored) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
+        } catch (Exception ignored) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: The requested action could not be completed.");
         }
         return user.get();
     }
+
+//    public Mono<User> getFromToken(String token) {
+//        Mono<User> user;
+//        try {
+//            user = Mono.justOrEmpty(userRepository.findById(authRepository.getUserID(token)));
+////            if (user.isEmpty()) {
+////                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
+////            }
+//        } catch (IllegalArgumentException ignored) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
+//        }
+//        return user;
+//    }
 
     private void validateNewPassword(String newPassword) {
         boolean digit = false;

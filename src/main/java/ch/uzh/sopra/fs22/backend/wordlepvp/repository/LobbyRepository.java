@@ -51,6 +51,7 @@ public class LobbyRepository {
                     l.setPlayers(new HashSet<>(users));
                     return l;
                 })
+                .publishOn(Schedulers.boundedElastic())
                 .doOnNext(l -> this.reactiveRedisTemplate.<String, Lobby>opsForHash().put("lobbies", l.getId(), l).subscribe())
                 .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbyplayers", l).subscribe());
     }
@@ -78,7 +79,7 @@ public class LobbyRepository {
                 .listenToChannel("lobbyplayers", "lobbysettings", "lobbychat")
                 //.filter(stringLobbyMessage -> stringLobbyMessage.getMessage().getPlayers().contains(player))
                 .doOnNext(s -> {
-                    // nothing?
+                    var test = "";
                 })
                 .doOnCancel(() -> {/* remove player from lobby*/})
                 .log()
