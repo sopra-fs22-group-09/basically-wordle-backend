@@ -52,11 +52,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-graphql'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	// https://mvnrepository.com/artifact/org.springframework.security/spring-security-crypto
 	implementation 'org.springframework.security:spring-security-crypto'
 
 	implementation 'org.bouncycastle:bcpkix-jdk18on:1.71'
-	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.hibernate:hibernate-validator:7.0.4.Final'
 	implementation 'org.apache.commons:commons-lang3:3.12.0'
 	//implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -65,11 +65,11 @@ dependencies {
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.graphql:spring-graphql-test'
+	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation "org.testcontainers:junit-jupiter:1.16.3"
 	testImplementation 'org.testcontainers:postgresql:1.16.3'
 	testImplementation 'io.projectreactor:reactor-test'
-	testImplementation 'org.springframework.graphql:spring-graphql-test'
-	testImplementation 'org.springframework.security:spring-security-test'
 }
 
 bootJar {
