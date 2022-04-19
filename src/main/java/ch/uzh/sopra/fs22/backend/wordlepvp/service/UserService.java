@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +22,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -94,12 +94,7 @@ public class UserService {
     }
 
     public boolean logout(String token) {
-        User user;
-        try {
-            user = userRepository.getReferenceById(authRepository.getUserID(token));
-        } catch (EntityNotFoundException ignored) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
-        }
+        User user = getFromToken(token);
         user.setStatus(UserStatus.OFFLINE);
         authRepository.expire(token);
         return true;
@@ -133,6 +128,19 @@ public class UserService {
 
     public String authorize(User user) {
         return authRepository.setAuthToken(user);
+    }
+
+    public User getFromToken(String token) {
+        Optional<User> user;
+        try {
+            user = userRepository.findById(authRepository.getUserID(token));
+            if (user.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
+            }
+        } catch (IllegalArgumentException ignored) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
+        }
+        return user.get();
     }
 
     private void validateNewPassword(String newPassword) {
