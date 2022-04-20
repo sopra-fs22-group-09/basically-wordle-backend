@@ -85,7 +85,7 @@ input GameSettingsInput {
 #}
 #--------------------------------------------------
 type User {
-    id: ID
+    id: ID!
     username: String
     email: String
     status: UserStatus
