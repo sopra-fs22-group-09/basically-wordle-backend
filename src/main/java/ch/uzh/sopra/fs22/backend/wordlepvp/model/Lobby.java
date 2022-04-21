@@ -5,17 +5,15 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Version;
-import org.springframework.data.redis.core.RedisHash;
 
+import javax.persistence.Column;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.UUID;
 
 
 @Data
 @Builder
-@ToString
 //@RedisHash("lobbies")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -40,11 +38,7 @@ public class Lobby implements Serializable {
 
     private GameMode gameMode;
 
-    //TODO: implement Game class (this should be a Game object)
-    private String game;
-
-    //TODO: should be JSON
-    private String settings;
+    private Game game;
 
     private LobbyStatus status;
 
