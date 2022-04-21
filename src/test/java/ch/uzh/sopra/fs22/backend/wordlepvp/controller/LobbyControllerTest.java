@@ -9,6 +9,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -26,23 +27,25 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @GraphQlTest(LobbyController.class)
 @ActiveProfiles("test")
-@Import({LobbyRepository.class, RedisConfig.class})
+@Import({LobbyRepository.class})
 //@AutoConfigureTestEntityManager
 public class LobbyControllerTest {
 
     @Autowired
     private GraphQlTester graphQlTester;
 
-    @MockBean
-    private ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
-
-    @MockBean
-    private RedisConnectionFactory redisConnectionFactory;
+//    @MockBean
+//    private ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
+//
+//    @MockBean
+//    private RedisConnectionFactory redisConnectionFactory;
 
     @MockBean
     private LobbyRepository lobbyRepository;
@@ -51,8 +54,8 @@ public class LobbyControllerTest {
     @MockBean
     private UserService userService;
 
-    @Mock
-    private UserRepository userRepository;
+//    @Mock
+//    private UserRepository userRepository;
 
 //    @Test
 //    void createLobby() {
@@ -90,10 +93,13 @@ public class LobbyControllerTest {
                 .executeSubscription()
                 .toFlux("lobby", Lobby.class);
 
-        given(lobbyRepository.getLobbyStream("deadbeef-dead-beef-caff-deadbeefcaff", User.builder()
+        User expectedPlayer = User.builder()
                 .id(UUID.fromString("caffbeef-dead-beef-caff-deadbeefcaff"))
                 .username("Jeff")
-                .build())).willReturn(result);
+                .build();
+
+//        given(userService.getFromToken("deadbeee-dead-beef-caff-deadbeefcaff")).willReturn(expectedPlayer);
+//        when(lobbyRepository.getLobbyStream(Mockito.anyString(), Mockito.any())).thenReturn(Flux.empty());
 
         Lobby expected = Lobby.builder()
                 .id("deadbeef-dead-beef-caff-deadbeefcaff")
@@ -102,10 +108,7 @@ public class LobbyControllerTest {
                 .gameCategory(GameCategory.PVP)
                 .players(new HashSet<>(
                         Set.of(
-                                User.builder()
-                                        .id(UUID.fromString("caffbeef-dead-beef-caff-deadbeefcaff"))
-                                        .username("Jeff")
-                                        .build()
+                                expectedPlayer
                         )
                 ))
                 .build();
