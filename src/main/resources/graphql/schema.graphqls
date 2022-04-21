@@ -17,8 +17,7 @@ type Mutation {
 
     createLobby(input: LobbyInput!): Lobby
     joinLobbyById(id: String!): Lobby
-    leaveLobby: Lobby
-    updateLobbySettings(gameSettings: GameSettingsInput!): GameSettings
+    updateLobbySettings(id: String!, gameSettings: GameSettingsInput!): Lobby
     #sendLobbyMessage(message: String!): String
 
     #requestFriendByUserId(id: ID!): ID
@@ -30,7 +29,7 @@ type Mutation {
 }
 type Subscription {
     #lobbyList: [Lobby]
-    lobby: Lobby
+    lobby(id: String!): Lobby
     lobbyInvitations: ID
     lobbyChat: Message
 
@@ -73,8 +72,8 @@ input LobbyInput {
 }
 input GameSettingsInput {
     gameMode: GameMode!
-    amountRounds: Int!
-    roundTime: Int!
+    amountRounds: Int
+    roundTime: Int
     # wordCategories: Categories ??? how
 }
 
@@ -86,8 +85,8 @@ input GameSettingsInput {
 type User {
     id: ID
     username: String
-    email: String!
-    status: UserStatus!
+    email: String
+    status: UserStatus
 }
 type UserSettings {
     avatarID: String!
@@ -112,13 +111,13 @@ type Lobby {
     owner: User!
     status: LobbyStatus!
     gameCategory: GameCategory!
-    gameSettings: GameSettings!
+    gameMode: GameMode!
+    game: Game!
     players: [User]
 }
-type GameSettings {
-    gameMode: GameMode!
-    amountRounds: Int!
-    roundTime: Int!
+type Game {
+    amountRounds: Int
+    roundTime: Int
     # wordCategories: Categories ??? how
 }
 

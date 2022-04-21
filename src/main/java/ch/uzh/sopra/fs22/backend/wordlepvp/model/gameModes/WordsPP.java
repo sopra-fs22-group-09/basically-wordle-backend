@@ -10,9 +10,9 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InTime implements Game, Serializable {
+public class WordsPP implements Game, Serializable {
 
-    public int amountRounds = 1;
-    public int roundTime = 0;
+    public int amountRounds = 0;
+    public int roundTime = 300;
 
 }
