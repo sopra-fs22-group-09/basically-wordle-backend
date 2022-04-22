@@ -24,11 +24,16 @@ public class LobbyRepository {
         this.reactiveRedisTemplate = reactiveRedisTemplate;
     }
 
-    // TODO: Check for lobby name duplicates, change owner on leave, only owner can change lobby !!!!
-    // TODO: set max lobby size for mode, get max values for other attributes
+    // TODO: Check for lobby name duplicates
+    // TODO: get max values for other attributes (set max for a category) ?? maybe change ??
     // TODO: handle 2 browser sessions, change status on full & allow entry if not full
 
     public Mono<Lobby> saveLobby(LobbyInput input, User player) {
+
+        if (input.getGameCategory() == GameCategory.PVP && input.getSize() > 6 ||
+            input.getGameCategory() == GameCategory.COOP && input.getSize() > 4) {
+            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Lobby size is too big.");
+        }
 
         Lobby lobby = Lobby.builder()
                 .id(UUID.randomUUID().toString())
@@ -85,10 +90,13 @@ public class LobbyRepository {
                 .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe());
     }*/
 
-    public Mono<Lobby> changeLobby(String id, GameSettingsInput gameSettings) {
+    public Mono<Lobby> changeLobby(String id, GameSettingsInput gameSettings, User player) {
 
         return this.reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
                 .mapNotNull(l -> {
+                    if (l.getOwner() != player) {
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to change settings!");
+                    }
                     if (GameCategory.valueOf(gameSettings.getGameMode().getCategory()) != l.getGameCategory()) {
                         throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "GameMode is not supported by current GameCategory!");
                     }
@@ -121,25 +129,23 @@ public class LobbyRepository {
                 .map(ReactiveSubscription.Message::getMessage)
                 .log()
                 .publishOn(Schedulers.boundedElastic())
-//                .doOnNext(s -> {
-//                    // Do something...
-//                })
-                .doFinally(s -> {
-                    reactiveRedisTemplate.<String, Lobby>opsForHash().values("lobbies")
-                            .filter(l -> l.getPlayers().contains(player))
-                            .publishOn(Schedulers.boundedElastic())
-                            .doOnNext(l -> {
-                                l.getPlayers().remove(player);
-                                reactiveRedisTemplate.<String, Lobby>opsForHash().put("lobbies", l.getId(), l).subscribe();
-                            })
-                            .doOnNext(l -> {
-                                if (l.getPlayers().isEmpty()) {
-                                    reactiveRedisTemplate.<String, Lobby>opsForHash().remove("lobbies", l.getId()).subscribe();
-                                }
-                            })
-                            .doOnNext(l -> reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe())
-                            .subscribe();
-                });
+                .doFinally(s -> reactiveRedisTemplate.<String, Lobby>opsForHash().values("lobbies")
+                        .filter(l -> l.getPlayers().contains(player))
+                        .publishOn(Schedulers.boundedElastic())
+                        .doOnNext(l -> {
+                            l.getPlayers().remove(player);
+                            if (!l.getPlayers().contains(l.getOwner()) && l.getPlayers().stream().findFirst().isPresent()) {
+                                l.setOwner(l.getPlayers().stream().findFirst().get());
+                            }
+                            reactiveRedisTemplate.<String, Lobby>opsForHash().put("lobbies", l.getId(), l).subscribe();
+                        })
+                        .doOnNext(l -> {
+                            if (l.getPlayers().isEmpty()) {
+                                reactiveRedisTemplate.<String, Lobby>opsForHash().remove("lobbies", l.getId()).subscribe();
+                            }
+                        })
+                        .doOnNext(l -> reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe())
+                        .subscribe());
     }
 
     public Flux<Lobby> getAllLobbies() {

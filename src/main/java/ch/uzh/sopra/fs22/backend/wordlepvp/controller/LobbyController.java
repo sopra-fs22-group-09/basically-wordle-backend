@@ -45,7 +45,7 @@ public class LobbyController {
     @MutationMapping
     public Mono<Lobby> updateLobbySettings(@Argument @Valid String id, @Argument @Valid GameSettingsInput gameSettings, @ContextValue(name = "Authorization") String authHeader) {
         User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.lobbyRepository.changeLobby(id, gameSettings);
+        return this.lobbyRepository.changeLobby(id, gameSettings, player);
     }
 
     @SubscriptionMapping
