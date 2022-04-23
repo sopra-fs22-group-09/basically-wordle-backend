@@ -1,5 +1,5 @@
 plugins {
-	id 'org.springframework.boot' version '2.7.0-SNAPSHOT'
+	id 'org.springframework.boot' version '2.7.0-RC1'
 	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 	id 'java'
 	id 'idea'
@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'ch.uzh.sopra.fs22.backend'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.1-M3'
 //sourceCompatibility = '17'
 
 java {
