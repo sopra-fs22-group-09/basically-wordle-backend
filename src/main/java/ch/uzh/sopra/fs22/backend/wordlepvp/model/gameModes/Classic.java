@@ -4,6 +4,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.LetterState;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;

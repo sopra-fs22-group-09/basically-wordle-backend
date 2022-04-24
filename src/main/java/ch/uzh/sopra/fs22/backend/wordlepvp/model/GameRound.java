@@ -1,10 +1,8 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
-
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Random;
 
@@ -25,5 +23,7 @@ public class GameRound {
     private String[] words;
     private LetterState[][] letterStates;
 
-    private int timeTaken;
+    private long start;
+    private long finish;
+
 }
