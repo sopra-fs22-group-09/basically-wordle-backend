@@ -1,0 +1,12 @@
+subscription {
+    lobby(id: "deadbeef-dead-beef-caff-deadbeefcaff") {
+        id
+        size
+        name
+        gameCategory
+        players {
+            id
+            username
+        }
+    }
+}

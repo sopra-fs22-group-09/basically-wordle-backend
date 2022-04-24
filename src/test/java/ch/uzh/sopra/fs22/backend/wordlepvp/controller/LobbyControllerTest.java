@@ -1,21 +1,16 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.RedisConfig;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameCategory;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
-import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.graphql.test.tester.GraphQlTester;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,7 +22,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
@@ -77,29 +71,20 @@ public class LobbyControllerTest {
 //
     @Test
     void lobby() {
-        Flux<Lobby> result = this.graphQlTester.document("""
-                        subscription {
-                          lobby {
-                            id
-                            size
-                            name
-                            gameCategory
-                            players {
-                              id
-                              username
-                            }
-                          }
-                        }""")
+        Flux<Lobby> result = this.graphQlTester.documentName("lobby")
                 .executeSubscription()
-                .toFlux("lobby", Lobby.class);
+                .toFlux("lobby", Lobby.class)
+                // FIXME: Jesus Christ! Why does Authorization appear as a new KV pair inside the top-level map? D:
+//                .contextWrite(Context.of("Authorization", "Bearer Toast"))
+                .contextWrite(context -> context.put("Authorization", "Bearer Toast"));
 
         User expectedPlayer = User.builder()
                 .id(UUID.fromString("caffbeef-dead-beef-caff-deadbeefcaff"))
                 .username("Jeff")
                 .build();
 
-//        given(userService.getFromToken("deadbeee-dead-beef-caff-deadbeefcaff")).willReturn(expectedPlayer);
-//        when(lobbyRepository.getLobbyStream(Mockito.anyString(), Mockito.any())).thenReturn(Flux.empty());
+        given(userService.getFromToken("deadbeee-dead-beef-caff-deadbeefcaff")).willReturn(expectedPlayer);
+        when(lobbyRepository.getLobbyStream(Mockito.anyString(), Mockito.any())).thenReturn(Flux.empty());
 
         Lobby expected = Lobby.builder()
                 .id("deadbeef-dead-beef-caff-deadbeefcaff")
@@ -142,5 +127,22 @@ public class LobbyControllerTest {
                     assertThat(errors.get(0).getErrorType()).isEqualTo(ErrorType.UNAUTHORIZED);
                 });
     }
+
+//    @Test
+//    void authHeaderPresentSuccess() {
+//        this.graphQlTester.document("query { getLobbies }")
+//                .execute()
+//                .errors()
+//                .satisfy(errors -> {
+//                    assertThat(errors).hasSize(1);
+//                    assertThat(errors.get(0).getErrorType()).isEqualTo(ErrorType.UNAUTHORIZED);
+//                });
+//
+//        StepVerifier.create(result)
+//                .expectAccessibleContext()
+//                .contains("Authorization", "Bearer Toast")
+//                .then()
+//                .verifyComplete();
+//    }
 
 }
