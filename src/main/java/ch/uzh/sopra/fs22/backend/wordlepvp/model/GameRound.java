@@ -1,24 +1,28 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
 
-import lombok.AllArgsConstructor;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.Random;
 
 @Data
-@Builder
-//@RedisHash
-@NoArgsConstructor
-@AllArgsConstructor
 public class GameRound {
 
+    private WordsRepository wordRepository;
+
+    public GameRound() {
+        Random r = new Random();
+        wordsArray = wordRepository.getRandomWords(250);
+        targetWord = wordsArray[r.nextInt(wordsArray.length)];
+    }
+
+    private String[] wordsArray;
     private String targetWord;
 
-    private Character[][] words;
-
+    private String[] words;
     private LetterState[][] letterStates;
 
     private int timeTaken;

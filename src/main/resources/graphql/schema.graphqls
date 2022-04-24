@@ -24,7 +24,7 @@ type Mutation {
     #sendMessageToUserId(input: MessageInput!): Message
 
     #startGame: GameMode #maybe we need smth
-    #submitGuess(word: String!): [[LetterState]]
+    submitGuess(word: String!): [[LetterState]]
     playAgain: ID # I suggest we use the Lobby ID?
 }
 type Subscription {
