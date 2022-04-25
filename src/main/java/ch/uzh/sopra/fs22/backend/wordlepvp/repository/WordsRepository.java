@@ -29,7 +29,7 @@ public class WordsRepository {
     }
 
     public String[] getWordsByTopic(String topic, int count) {
-        if (count < 1) throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Please request a valid number of words."); // TODO should this error be handled differently?
+        if (count < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please request a valid number of words."); // TODO should this error be handled differently?
         String sanitizedTopic = topic.replaceAll("[^A-Za-z]", ""); //Sanitize all non-alphabetic characters to prevent API abuse
         if (sanitizedTopic.equals("")) sanitizedTopic = allWords;
 
@@ -38,7 +38,7 @@ public class WordsRepository {
         if (count > redisTemplate.opsForHash().size(sanitizedTopic)) {
             cacheWordsFromAPI(sanitizedTopic);
             if (count > redisTemplate.opsForHash().size(sanitizedTopic))
-                throw new ResponseStatusException(HttpStatus.PARTIAL_CONTENT, "Too many words for the were requested."); // TODO should this error be handled differently?
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Too many words for the were requested."); // TODO should this error be handled differently?
         }
 
         //Convert result to object array, then copy the content to a new string array and return it.
@@ -90,10 +90,10 @@ public class WordsRepository {
             } else throw new ProtocolException();
         } catch (ProtocolException | MalformedURLException e) {
             // TODO should this error be handled differently?
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Something went wrong while fetching data from the external API. Please try again in a few minutes.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while fetching data from the external API. Please try again in a few minutes.");
         } catch (IOException | ParseException e) {
             // TODO should this error be handled differently?
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Something went wrong while processing the fetched data from the external API. Please try again in a few minutes.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while processing the fetched data from the external API. Please try again in a few minutes.");
         }
     }
 }
