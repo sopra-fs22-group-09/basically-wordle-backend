@@ -5,6 +5,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.GameSettingsInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.*;
@@ -24,8 +25,9 @@ public class LobbyController {
     private final UserService userService;
 
     @MutationMapping
-    public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input) { // TODO Authorization
-        return this.lobbyRepository.saveLobby(input);
+    public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input, @ContextValue(name = "Authorization") String authHeader) {
+        User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.lobbyRepository.saveLobby(input, player);
     }
 
     @MutationMapping
@@ -34,16 +36,22 @@ public class LobbyController {
         return this.lobbyRepository.playerJoinLobby(id, player);
     }
 
-    @MutationMapping
+/*    @MutationMapping
     public Mono<Lobby> leaveLobby(@ContextValue(name = "Authorization") String authHeader) {
         User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.lobbyRepository.playerLeaveLobby(player);
+    }*/
+
+    @MutationMapping
+    public Mono<Lobby> updateLobbySettings(@Argument @Valid String id, @Argument @Valid GameSettingsInput gameSettings, @ContextValue(name = "Authorization") String authHeader) {
+        User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.lobbyRepository.changeLobby(id, gameSettings, player);
     }
 
     @SubscriptionMapping
-    public Flux<Lobby> lobby(@ContextValue("Authorization") String authHeader) { // TODO Authorization
+    public Flux<Lobby> lobby(@Argument @Valid String id, @ContextValue("Authorization") String authHeader) {
         User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.lobbyRepository.getLobbyStream(player);
+        return this.lobbyRepository.getLobbyStream(id, player);
     }
 
     @QueryMapping
