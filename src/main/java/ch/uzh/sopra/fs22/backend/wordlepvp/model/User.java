@@ -3,12 +3,10 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 import lombok.*;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -17,10 +15,12 @@ import java.util.UUID;
 @Setter
 @Entity
 @Builder
+@ToString
 @RequiredArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "users")  // because Postgres is stupid we should not use user without quotes, but we use plural anyways
-public class User implements Serializable {
+public class User extends BaseEntity implements Serializable {
 
     @Id
     @GenericGenerator(name = "uuid2", strategy = "uuid2")
@@ -41,9 +41,11 @@ public class User implements Serializable {
     private String avatarID;
 
     @OneToMany
+    @ToString.Exclude
     private Set<User> friends;
 
     @OneToMany
+    @ToString.Exclude
     private Set<Score> scores;
 
     //TODO: no kei klass ..
@@ -69,12 +71,6 @@ public class User implements Serializable {
     //    @Column(nullable = false)
     @Column(nullable = true)
     private String resetToken;
-
-    @CreatedDate
-    private LocalDateTime createdDate;
-
-    @LastModifiedDate
-    private LocalDateTime lastUpdatedDate;
 
     @Override
     public boolean equals(Object o) {

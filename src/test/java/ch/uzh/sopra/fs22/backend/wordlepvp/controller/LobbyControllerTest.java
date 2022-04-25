@@ -5,6 +5,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
+import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,7 +84,8 @@ public class LobbyControllerTest {
                 .username("Jeff")
                 .build();
 
-        given(userService.getFromToken("deadbeee-dead-beef-caff-deadbeefcaff")).willReturn(expectedPlayer);
+        given(AuthorizationHelper.extractAuthToken(Mockito.anyString())).willReturn("deadbeee-dead-beef-caff-deadbeefcaff");
+//        given(userService.getFromToken("deadbeee-dead-beef-caff-deadbeefcaff")).willReturn(expectedPlayer);
         when(lobbyRepository.getLobbyStream(Mockito.anyString(), Mockito.any())).thenReturn(Flux.empty());
 
         Lobby expected = Lobby.builder()
