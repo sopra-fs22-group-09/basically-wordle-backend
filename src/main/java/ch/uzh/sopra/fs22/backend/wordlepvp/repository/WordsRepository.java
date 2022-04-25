@@ -14,6 +14,7 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Scanner;
 
 @Component
@@ -28,27 +29,18 @@ public class WordsRepository {
 
     public String[] getWordsByTopic(String topic, int count) {
         if (count < 1) throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Please request a valid number of words."); // TODO should this error be handled differently?
-        topic = topic.replaceAll("[^A-Za-z]", ""); //sanitize all non-alphabetic characters to prevent API abuse
-        if (count > redisTemplate.opsForHash().size(topic)) {
-            cacheWordsFromAPI(topic);
-            if (count > redisTemplate.opsForHash().size(topic))
+        String sanitizedTopic = topic.replaceAll("[^A-Za-z]", ""); //Sanitize all non-alphabetic characters to prevent API abuse
+
+        //Check whether there are enough words in the repository:
+        //If not fetch from api and check again. if there are still not enough words throw error.
+        if (count > redisTemplate.opsForHash().size(sanitizedTopic)) {
+            cacheWordsFromAPI(sanitizedTopic);
+            if (count > redisTemplate.opsForHash().size(sanitizedTopic))
                 throw new ResponseStatusException(HttpStatus.PARTIAL_CONTENT, "Too many words for the were requested."); // TODO should this error be handled differently?
         }
 
-        String[] words = new String[count];
-        boolean skip = false;
-        for (int i = 0; i < words.length; ++i) {
-            String word = redisTemplate.opsForHash().randomEntry(topic).getValue().toString();
-
-            for (int j = 0; j < i; ++j) {
-                skip = words[j].equals(word);
-                if (skip) break;
-            }
-
-            if (skip) --i;
-            else words[i] = word;
-        }
-        return words;
+        //Convert result to object array, then copy the content to a new string array and return it.
+        return Arrays.copyOf(redisTemplate.opsForHash().randomEntries(sanitizedTopic, count).values().toArray(), count, String[].class);
     }
 
     public String[] getRandomWords(int count) {
@@ -65,7 +57,6 @@ public class WordsRepository {
                 Scanner scan = new Scanner(url.openStream());
                 while(scan.hasNext()) {
                     JSONArray js = (JSONArray) new JSONParser().parse(scan.nextLine());
-
                     for (int i = 0; i < js.size(); ++i) {
                         String word = ((JSONObject) js.get(i)).get("word").toString();
                         redisTemplate.opsForHash().put(topic, word, word);
