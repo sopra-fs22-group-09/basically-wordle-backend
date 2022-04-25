@@ -4,6 +4,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameCategory;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
 import org.junit.jupiter.api.Test;
@@ -49,8 +50,8 @@ public class LobbyControllerTest {
     @MockBean
     private UserService userService;
 
-//    @Mock
-//    private UserRepository userRepository;
+    @MockBean
+    private UserRepository userRepository;
 
 //    @Test
 //    void createLobby() {
@@ -107,16 +108,10 @@ public class LobbyControllerTest {
 
     @Test
     void getLobbies() {
-        Flux<GraphQlTester.Response> result = this.graphQlTester.document("subscription { greetings }")
-                .executeSubscription()
-                .toFlux();
-
-        StepVerifier.create(result)
-                .consumeNextWith(response -> response.path("greetings").hasValue())
-                .consumeNextWith(response -> response.path("greetings").matchesJson("\"Bonjour!\""))
-                .consumeNextWith(response -> response.path("greetings").matchesJson("\"Hola!\""))
-                .expectNextCount(2)
-                .verifyComplete();
+        this.graphQlTester.document("query { getLobbies }")
+                .execute()
+                .errors()
+                .satisfy(errors -> assertThat(errors).hasSize(0));
     }
 
     @Test
