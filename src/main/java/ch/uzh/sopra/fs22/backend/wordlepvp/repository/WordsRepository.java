@@ -8,14 +8,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.util.*;
 
 @Component
 public class WordsRepository {
@@ -23,13 +24,14 @@ public class WordsRepository {
     private final RedisTemplate<String, String> redisTemplate;
     private final String allWords = "allWords";
 
-    public WordsRepository(RedisTemplate<String, String> redisTemplate) {
+    public WordsRepository(@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection") RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
     public String[] getWordsByTopic(String topic, int count) {
         if (count < 1) throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Please request a valid number of words."); // TODO should this error be handled differently?
         String sanitizedTopic = topic.replaceAll("[^A-Za-z]", ""); //Sanitize all non-alphabetic characters to prevent API abuse
+        if (sanitizedTopic.equals("")) sanitizedTopic = allWords;
 
         //Check whether there are enough words in the repository:
         //If not fetch from api and check again. if there are still not enough words throw error.
@@ -40,7 +42,24 @@ public class WordsRepository {
         }
 
         //Convert result to object array, then copy the content to a new string array and return it.
-        return Arrays.copyOf(redisTemplate.opsForHash().randomEntries(sanitizedTopic, count).values().toArray(), count, String[].class);
+        return Arrays.copyOf(Objects.requireNonNull(redisTemplate.opsForHash().randomEntries(sanitizedTopic, count)).values().toArray(), count, String[].class);
+    }
+
+    public String[] getWordsByTopics(String[] topics, int count) {
+        if (topics.length < 1) return getRandomWords(count);
+        if (topics.length == 1) return getWordsByTopic(topics[0], count);
+        String[][] tmp = new String[topics.length][];
+        for (int i = 0; i < topics.length; ++i) tmp[i] = getWordsByTopic(topics[i], count);
+        String[] words = new String[count];
+        for (int i = 0; i < count; ++i) {
+            int y = new Random().nextInt(topics.length);
+            int x = new Random().nextInt(count);
+            if (tmp[y][x] != null) { //Prevent selecting more than once the same word
+                words[i] = tmp[y][x];
+                tmp[y][x] = null;
+            } else --i;
+        }
+        return words;
     }
 
     public String[] getRandomWords(int count) {
@@ -54,14 +73,18 @@ public class WordsRepository {
             conn.setRequestMethod("GET");
             conn.connect();
             if(conn.getResponseCode() == 200) {
-                Scanner scan = new Scanner(url.openStream());
-                while(scan.hasNext()) {
-                    JSONArray js = (JSONArray) new JSONParser().parse(scan.nextLine());
-                    for (int i = 0; i < js.size(); ++i) {
-                        String word = ((JSONObject) js.get(i)).get("word").toString();
-                        redisTemplate.opsForHash().put(topic, word, word);
+                BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+                HashMap<String, String> tmp = new HashMap<>();
+                String inputLine;
+                while((inputLine = in.readLine()) != null) {
+                    for (Object j : (JSONArray) new JSONParser().parse(inputLine)) {
+                        String word = ((JSONObject) j).get("word").toString();
+                        // Don't establish a connection to redis every time
+                        // Instead collect all words and put them all together to redis
+                        tmp.put(word, word);
                     }
                 }
+                redisTemplate.opsForHash().putAll(topic, tmp);
                 redisTemplate.expire(topic, Duration.ofDays(1));
 
             } else throw new ProtocolException();
