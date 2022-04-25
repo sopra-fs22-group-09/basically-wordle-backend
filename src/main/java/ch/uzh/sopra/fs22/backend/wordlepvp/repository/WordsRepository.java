@@ -28,8 +28,9 @@ public class WordsRepository {
 
     public String[] getWordsByTopic(String topic, int count) {
         if (count < 1) throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Please request a valid number of words."); // TODO should this error be handled differently?
+        topic = topic.replaceAll("[^A-Za-z]", ""); //sanitize all non-alphabetic characters to prevent API abuse
         if (count > redisTemplate.opsForHash().size(topic)) {
-            cacheWordsFromAPI(topic.equals(allWords) ? "" : topic);
+            cacheWordsFromAPI(topic);
             if (count > redisTemplate.opsForHash().size(topic))
                 throw new ResponseStatusException(HttpStatus.PARTIAL_CONTENT, "Too many words for the were requested."); // TODO should this error be handled differently?
         }
@@ -56,7 +57,7 @@ public class WordsRepository {
 
     private void cacheWordsFromAPI(String topic) {
         try {
-            URL url = new URL("https://api.datamuse.com/words?sp=?????&max=1000&topics=" + topic);
+            URL url = new URL("https://api.datamuse.com/words?sp=?????&max=1000" + (topic.equals(allWords) ? "" : "&topics=" + topic));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.connect();
@@ -68,15 +69,9 @@ public class WordsRepository {
                     for (int i = 0; i < js.size(); ++i) {
                         String word = ((JSONObject) js.get(i)).get("word").toString();
                         redisTemplate.opsForHash().put(topic, word, word);
-                        // TODO if one topic is chosen often allWords will always contain (at least) words of this topic
-                        //  but it should contain words of all topics
-                        redisTemplate.opsForHash().put(allWords, word, word);
                     }
                 }
                 redisTemplate.expire(topic, Duration.ofDays(1));
-                if (redisTemplate.getExpire(allWords) != null && redisTemplate.getExpire(allWords) <= 0)
-                    redisTemplate.expire(allWords, Duration.ofDays(1));
-
 
             } else throw new ProtocolException();
         } catch (ProtocolException | MalformedURLException e) {
