@@ -1,8 +1,10 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.GameSettingsInput;
@@ -23,6 +25,7 @@ public class LobbyController {
 
     private final LobbyRepository lobbyRepository;
     private final UserService userService;
+    private final PlayerService playerService;
 
     @MutationMapping
     public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input, @ContextValue(name = "Authorization") String authHeader) {
@@ -33,14 +36,10 @@ public class LobbyController {
     @MutationMapping
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        Mono<Player> testPlayer = this.playerService.createPlayer(player, id);//TODO Probably needs to change to only player in lobby
+        testPlayer.subscribe(player1 -> System.out.println("WIUIUIUIU   " + player1));
         return this.lobbyRepository.playerJoinLobby(id, player);
     }
-
-/*    @MutationMapping
-    public Mono<Lobby> leaveLobby(@ContextValue(name = "Authorization") String authHeader) {
-        User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.lobbyRepository.playerLeaveLobby(player);
-    }*/
 
     @MutationMapping
     public Mono<Lobby> updateLobbySettings(@Argument @Valid String id, @Argument @Valid GameSettingsInput gameSettings, @ContextValue(name = "Authorization") String authHeader) {

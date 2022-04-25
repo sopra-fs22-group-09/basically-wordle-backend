@@ -24,14 +24,12 @@ public class LobbyRepository {
         this.reactiveRedisTemplate = reactiveRedisTemplate;
     }
 
-    // TODO: Check for lobby name duplicates
-    // TODO: get max values for other attributes (set max for a category) ?? maybe change ??
+    // TODO: Check for lobby name duplicates ? maybe. or maybe not. or no, not at all.
     // TODO: handle 2 browser sessions, change status on full & allow entry if not full
 
     public Mono<Lobby> saveLobby(LobbyInput input, User player) {
 
-        if (input.getGameCategory() == GameCategory.PVP && input.getSize() > 6 ||
-            input.getGameCategory() == GameCategory.COOP && input.getSize() > 4) {
+        if (input.getSize() > input.getGameCategory().getMaxGameSize()) {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Lobby size is too big.");
         }
 
@@ -54,7 +52,8 @@ public class LobbyRepository {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
         }
 
-        return this.reactiveRedisTemplate.opsForHash().put("lobbies", lobby.getId(), lobby)
+        return this.reactiveRedisTemplate.opsForHash()
+                .put("lobbies", lobby.getId(), lobby)
                 .map(l -> lobby)
                 .log();
     }
@@ -71,35 +70,19 @@ public class LobbyRepository {
                 .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe());
     }
 
-/*    public Mono<Lobby> playerLeaveLobby(User player) {
-
-        return this.reactiveRedisTemplate.<String, Lobby>opsForHash().values("lobbies")
-                .filter(l -> l.getPlayers().contains(player))
-                .mapNotNull(l -> {
-                    l.getPlayers().remove(player);
-                    return l;
-                })
-                .single()
-                .publishOn(Schedulers.boundedElastic())
-                .doOnNext(l -> this.reactiveRedisTemplate.<String, Lobby>opsForHash().put("lobbies", l.getId(), l).subscribe())
-                .doOnNext(l -> {
-                    if (l.getPlayers().isEmpty()) {
-                        reactiveRedisTemplate.<String, Lobby>opsForHash().remove("lobbies", l.getId()).subscribe();
-                    }
-                })
-                .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe());
-    }*/
-
     public Mono<Lobby> changeLobby(String id, GameSettingsInput gameSettings, User player) {
 
         return this.reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
-                .mapNotNull(l -> {
-                    if (l.getOwner() != player) {
+                .doOnNext(l -> {
+                    System.out.println(l.getOwner().getId() + " --- " + player.getId());
+                    if (!Objects.equals(l.getOwner().getId(), player.getId())) {
                         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to change settings!");
                     }
                     if (GameCategory.valueOf(gameSettings.getGameMode().getCategory()) != l.getGameCategory()) {
                         throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "GameMode is not supported by current GameCategory!");
                     }
+                })
+                .mapNotNull(l -> {
                     if (l.getGameMode() != gameSettings.getGameMode()) {
                         l.setGameMode(gameSettings.getGameMode());
                         try {

@@ -23,9 +23,9 @@ type Mutation {
     #requestFriendByUserId(id: ID!): ID
     #sendMessageToUserId(input: MessageInput!): Message
 
-    #startGame: GameMode #maybe we need smth
-    #submitGuess(word: String!): [[LetterState]]
-    playAgain: ID # I suggest we use the Lobby ID?
+    startGame: Game
+    submitGuess(word: String!): [[LetterState]]
+    #playAgain: ID # I suggest we use the Lobby ID?
 }
 type Subscription {
     #lobbyList: [Lobby]
