@@ -5,7 +5,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -25,12 +24,12 @@ public class AuthRepository {
     }
 
     public boolean isAuthorized(String token) {
-        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfPresent(token, Objects.requireNonNull(redisTemplate.opsForValue().get(token)), logoutAfter));
+        return redisTemplate.opsForValue().setIfPresent(token, redisTemplate.opsForValue().get(token), logoutAfter);
     }
 
     public boolean isPretendUser (User user, String token) {
         UUID uuidFromToken = redisTemplate.opsForValue().get(token);
-        return user.getId().equals(uuidFromToken) && Boolean.TRUE.equals(redisTemplate.opsForValue().setIfPresent(token, uuidFromToken, logoutAfter));
+        return user.getId().equals(uuidFromToken) && redisTemplate.opsForValue().setIfPresent(token, uuidFromToken, logoutAfter);
     }
 
     public UUID getUserID(String token) {
