@@ -30,7 +30,7 @@ public class Classic implements Game, Serializable {
         gameRound.setStart(System.nanoTime());
     }
 
-    public void guess(String guess) {
+    public Mono<GameRound> guess(String guess) {
         String[] previousGuesses = gameRound.getWords();
         if (guesses == 0) {
             previousGuesses = new String[6];
@@ -74,13 +74,12 @@ public class Classic implements Game, Serializable {
         }
         gameRound.setLetterStates(letterState);
         guesses++;
+
+        return null; //TODO change
     }
 
     public void endGame() {
         gameRound.setFinish(System.nanoTime());
 
-    }
-    public Mono<GameRound> guess(String word) {
-        return null;
     }
 }
