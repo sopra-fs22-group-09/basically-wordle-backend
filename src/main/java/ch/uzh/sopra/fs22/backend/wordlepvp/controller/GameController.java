@@ -33,7 +33,7 @@ public class GameController {
     @MutationMapping //TODO IS IT GAMEROUND?
     public Mono<GameRound> submitGuess(@Argument @Valid String word, @ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        Mono<GameRound> game = this.gameRepository.getGame(player);
+        Mono<GameRound> game = this.gameService.submit(word, player);
 
         return game;
     }

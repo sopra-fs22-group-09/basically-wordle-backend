@@ -12,7 +12,7 @@ public interface Game {
     int getRoundTime();
     void setRoundTime(int roundTime);
 
-    void start();
-    Mono<GameRound> guess(String word);
+    Game start(String[] repoWords);
+    GameRound guess(String word);
 
 }

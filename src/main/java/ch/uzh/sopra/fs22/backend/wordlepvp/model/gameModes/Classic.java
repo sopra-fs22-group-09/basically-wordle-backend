@@ -4,8 +4,6 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.LetterState;
 import lombok.Data;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -14,7 +12,6 @@ import java.util.Objects;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class Classic implements Game, Serializable {
 
     public int amountRounds = 1;
@@ -24,13 +21,14 @@ public class Classic implements Game, Serializable {
 
     private GameRound gameRound;
 
-
-    public void start() {
-        gameRound = new GameRound();
+    public Game start(String[] repoWords) {
+        this.gameRound = new GameRound(repoWords);
         gameRound.setStart(System.nanoTime());
+        return this;
     }
 
-    public Mono<GameRound> guess(String guess) {
+    public GameRound guess(String guess) {
+
         String[] previousGuesses = gameRound.getWords();
         if (guesses == 0) {
             previousGuesses = new String[6];
@@ -39,7 +37,7 @@ public class Classic implements Game, Serializable {
             gameRound.setWords(previousGuesses);
 
         if (Objects.equals(guess, gameRound.getTargetWord())) {
-            this.endGame();
+            this.concludeGame();
         }
         if (guesses >= 6) {
             this.endGame();
@@ -54,32 +52,41 @@ public class Classic implements Game, Serializable {
 
         //letterState[0][0] = LetterState.INWORD;
         for (int j=0; j < guess_chars.length; j++) {
-            for (int i=0; i < targetWord_chars.length; i++) {
-                if (guess_chars[j].equals(targetWord_chars[i]) && i == j) {
+
+                if (guess_chars[j].equals(targetWord_chars[j])) {
                     letterState[guesses][j] = LetterState.CORRECTPOSITION;
-                }
-                else if (guess_chars[j].equals(targetWord_chars[i])) {
-                    letterState[guesses][j] = LetterState.INWORD;
                 }
                 else {
                     letterState[guesses][j] = LetterState.WRONG;
                 }
-            }
+                for (int i=0; i < targetWord_chars.length; i++) {
+                    if (guess_chars[j].equals(targetWord_chars[i]) && i != j) {
+                        letterState[guesses][j] = LetterState.INWORD;
+                        break;
+                    }
+                }
+
         }
         for (int i=0; i < letterState[guesses].length; i++) {
             if (letterState[guesses][i] != LetterState.CORRECTPOSITION) {
                 break;
             }
-            this.endGame();
+            this.concludeGame();
         }
         gameRound.setLetterStates(letterState);
         guesses++;
 
-        return null; //TODO change
+        return gameRound; //TODO change
     }
 
+    // if game is lost
     public void endGame() {
         gameRound.setFinish(System.nanoTime());
 
+    }
+
+    // player wins the game
+    public void concludeGame() {
+        //conclude stats and show them to the player
     }
 }

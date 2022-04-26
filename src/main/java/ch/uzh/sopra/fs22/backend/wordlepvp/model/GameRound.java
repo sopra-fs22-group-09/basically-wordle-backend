@@ -4,14 +4,17 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
 import lombok.Builder;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.Random;
 
 @Data
-public class GameRound {
+public class GameRound implements Serializable {
 
-    private WordsRepository wordRepository;
+    private String[] repoWords;
+    private String targetWord;
 
-    public GameRound() {
+    public GameRound(String[] repoWords) {
+        this.repoWords = repoWords;
         Random r = new Random();
         wordsArray = wordRepository.getRandomWords(250);
         targetWord = wordsArray[r.nextInt(wordsArray.length)];

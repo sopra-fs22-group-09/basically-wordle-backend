@@ -30,14 +30,29 @@ public class GameRepository {
                 .log();
     }
 
-    public Mono<GameRound> getGame(Mono<Player> player) {
+    public Mono<Game> getGameByPlayer(Mono<Player> player) {
 
         return player.map(Player::getLobbyId)
                 .flatMap(lId -> this.reactiveRedisTemplate.<String, Lobby>opsForHash()
                         .get("lobbies", lId)
-                        .log()
                         .map(Lobby::getGame))
-                .flatMap(game -> game.guess("asdf")) // TODO: CURRENTLY RECEIVES A MONO FROM RETURN
+                .log();
+    }
+
+    public Mono<Game> updateGameByPlayer(Mono<Player> player, Game game) {
+
+        return player.map(Player::getLobbyId)
+                .flatMap(lobbyId -> this.reactiveRedisTemplate.<String, Lobby>opsForHash()
+                        .get("lobbies", lobbyId)
+                        .log())
+                .mapNotNull(lobby -> {
+                    lobby.setGame(game);
+                    return lobby;
+                })
+                .publishOn(Schedulers.boundedElastic())
+                .doOnNext(lobby -> this.reactiveRedisTemplate.<String, Lobby>opsForHash()
+                        .put("lobbies", lobby.getId(), lobby).subscribe())
+                .map(Lobby::getGame)
                 .log();
     }
 
