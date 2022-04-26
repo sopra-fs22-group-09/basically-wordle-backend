@@ -12,6 +12,8 @@ public interface Game {
     int getRoundTime();
     void setRoundTime(int roundTime);
 
+    GameRound getGameRound();
+
     Game start(String[] repoWords);
     GameRound guess(String word);
 

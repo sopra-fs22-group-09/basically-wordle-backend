@@ -1,7 +1,5 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
-import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -16,12 +14,8 @@ public class GameRound implements Serializable {
     public GameRound(String[] repoWords) {
         this.repoWords = repoWords;
         Random r = new Random();
-        wordsArray = wordRepository.getRandomWords(250);
-        targetWord = wordsArray[r.nextInt(wordsArray.length)];
+        this.targetWord = repoWords[r.nextInt(repoWords.length)];
     }
-
-    private String[] wordsArray;
-    private String targetWord;
 
     private String[] words;
     private LetterState[][] letterStates;

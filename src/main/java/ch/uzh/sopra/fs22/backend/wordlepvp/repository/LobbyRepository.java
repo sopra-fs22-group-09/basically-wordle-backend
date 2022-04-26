@@ -1,6 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
+import ch.uzh.sopra.fs22.backend.wordlepvp.service.GameService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.GameSettingsInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import org.springframework.data.redis.connection.ReactiveSubscription;
@@ -19,9 +20,11 @@ import java.util.*;
 public class LobbyRepository {
 
     private final ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate;
+    private final GameService gameService;
 
-    public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate) {
+    public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate, GameService gameService) {
         this.reactiveRedisTemplate = reactiveRedisTemplate;
+        this.gameService = gameService;
     }
 
     // TODO: Check for lobby name duplicates ? maybe. or maybe not. or no, not at all.
@@ -44,13 +47,16 @@ public class LobbyRepository {
                 .players(new HashSet<>())
                 .build();
 
-        try {
+        Game game = gameService.createGame(lobby.getGameMode());
+        lobby.setGame(game);
+
+/*        try {
             Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + lobby.getGameMode().getClassName()).asSubclass(Game.class);
             Game game = gameClass.getDeclaredConstructor().newInstance();
             lobby.setGame(game);
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
-        }
+        }*/
 
         return this.reactiveRedisTemplate.opsForHash()
                 .put("lobbies", lobby.getId(), lobby)

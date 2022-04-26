@@ -13,7 +13,7 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OneWord implements Game, Serializable {
+public class OneWord implements Serializable {
 
     public int amountRounds = 1;
     public int roundTime = 0;

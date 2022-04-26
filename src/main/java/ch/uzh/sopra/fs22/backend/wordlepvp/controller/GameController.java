@@ -4,6 +4,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.service.GameService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +22,13 @@ import javax.validation.Valid;
 @RequiredArgsConstructor
 public class GameController {
 
-    private final GameRepository gameRepository;
+    private final GameService gameService;
     private final PlayerService playerService;
 
     @MutationMapping
     public Mono<Game> startGame(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.gameRepository.initializeGame(player);
+        return this.gameService.initializeGame(player);
     }
 
     @MutationMapping //TODO IS IT GAMEROUND?

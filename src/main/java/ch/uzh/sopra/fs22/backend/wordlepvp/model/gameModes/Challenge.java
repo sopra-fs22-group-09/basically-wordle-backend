@@ -13,7 +13,7 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Challenge implements Game, Serializable {
+public class Challenge implements Serializable {
 
     public int amountRounds = 1;
     public int roundTime = 0;

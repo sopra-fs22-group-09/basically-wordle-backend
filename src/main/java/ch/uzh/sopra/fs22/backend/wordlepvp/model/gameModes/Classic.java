@@ -5,7 +5,6 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.LetterState;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import reactor.core.publisher.Mono;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -16,7 +15,6 @@ public class Classic implements Game, Serializable {
 
     public int amountRounds = 1;
     public int roundTime = 0;
-
     private int guesses = 0;
 
     private GameRound gameRound;
