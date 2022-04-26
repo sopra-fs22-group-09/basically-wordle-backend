@@ -18,18 +18,24 @@ public class Classic implements Game, Serializable {
     public int roundTime = 0;
     private int guesses = 0;
 
+    private boolean guessed = false;
+
     private GameRound gameRound;
 
     private GameStats gameStats;
 
     public Game start(String[] repoWords) {
         this.gameRound = new GameRound(repoWords);
+        this.gameStats = new GameStats();
         gameRound.setStart(System.nanoTime());
         return this;
     }
 
     public GameRound guess(String guess) {
 
+        if (this.guessed) {
+            return null;
+        }
         String[] previousGuesses = gameRound.getWords();
         if (guesses == 0) {
             previousGuesses = new String[6];
@@ -37,12 +43,9 @@ public class Classic implements Game, Serializable {
             previousGuesses[guesses] = guess;
             gameRound.setWords(previousGuesses);
 
-        if (Objects.equals(guess, gameRound.getTargetWord())) {
-            this.concludeGame();
-        }
-        if (guesses >= 6) {
-            this.endGame();
-        }
+      //  if (Objects.equals(guess, gameRound.getTargetWord())) {
+      //      this.endGame();
+      //  }
 
         String[] guess_chars = guess.split("");
         String[] targetWord_chars = gameRound.getTargetWord().split("");
@@ -62,23 +65,28 @@ public class Classic implements Game, Serializable {
                     letterState[guesses][j] = LetterState.WRONG;
                 }
                 for (int i=0; i < targetWord_chars.length; i++) {
-                    if (guess_chars[j].equals(targetWord_chars[i]) && i != j) {
+                    if (guess_chars[j].equals(targetWord_chars[i]) && i != j && letterState[guesses][j] != LetterState.CORRECTPOSITION) {
                         letterState[guesses][j] = LetterState.INWORD;
                         break;
                     }
                 }
 
         }
-        for (int i=0; i < letterState[guesses].length; i++) {
+        if (Objects.equals(guess, gameRound.getTargetWord())) {
+            this.guessed = true;
+            this.endGame();
+        }
+        /*for (int i=0; i < letterState[guesses].length; i++) {
             if (letterState[guesses][i] != LetterState.CORRECTPOSITION) {
                 break;
             }
-            this.concludeGame();
-        }
+            this.guessed = true;
+            this.endGame();
+        }*/
 
         gameRound.setLetterStates(letterState);
         guesses++;
-        if (guesses >= 6) {
+        if (guesses >= 6 && !this.guessed) {
             this.endGame();
         }
 
@@ -89,6 +97,14 @@ public class Classic implements Game, Serializable {
     public void endGame() {
         gameRound.setFinish(System.nanoTime());
 
+
+    }
+
+    // player wins the game
+    public GameStats concludeGame() {
+        if (gameRound.getFinish() == 0L) {
+            return null;
+        }
         LetterState[][] letterState = gameRound.getLetterStates();
         boolean won = false;
         long elapsedTime = (gameRound.getFinish() - gameRound.getStart()) / 1000000000;
@@ -102,7 +118,7 @@ public class Classic implements Game, Serializable {
         gameStats.setTargetWord(gameRound.getTargetWord());
 
         for (int i=0; i < letterState[guesses].length; i++) {
-            if (letterState[guesses][i] != LetterState.CORRECTPOSITION) {
+            if (letterState[guesses-1][i] != LetterState.CORRECTPOSITION) {
                 break;
             }
             won = true;
@@ -115,10 +131,6 @@ public class Classic implements Game, Serializable {
             gameStats.setRank(0);
             gameStats.setScore(0);
         }
-    }
-
-    // player wins the game
-    public GameStats concludeGame() {
         return gameStats;
         //conclude stats and show them to the player
         // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score
