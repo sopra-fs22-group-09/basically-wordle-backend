@@ -1,6 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;

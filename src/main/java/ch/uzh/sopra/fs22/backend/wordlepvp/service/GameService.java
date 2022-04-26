@@ -29,14 +29,14 @@ public class GameService {
         this.wordsRepository = wordsRepository;
     }
 
-    public Game createGame(GameMode gameMode) {
+/*    public Game createGame(GameMode gameMode) {
         try {
             Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + gameMode.getClassName()).asSubclass(Game.class);
             return gameClass.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
         }
-    }
+    }*/
 
     public Mono<Game> initializeGame(Mono<Player> player) {
 
