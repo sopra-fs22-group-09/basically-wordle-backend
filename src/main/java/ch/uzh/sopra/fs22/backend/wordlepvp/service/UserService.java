@@ -167,9 +167,10 @@ public class UserService {
                 lowercase = lowercase || ((int) newPassword.charAt(i) >= 97 && (int) newPassword.charAt(i) <= 122);
                 uppercase = uppercase || ((int) newPassword.charAt(i) >= 65 && (int) newPassword.charAt(i) <= 90);
                 digit = digit || ((int) newPassword.charAt(i) >= 48 && (int) newPassword.charAt(i) <= 57);
-                specialCharacters = specialCharacters || ((int) newPassword.charAt(i) >= 58 && (int) newPassword.charAt(i) <= 64) ||
-                        ((int) newPassword.charAt(i) >= 91 && (int) newPassword.charAt(i) <= 96) ||
-                        ((int) newPassword.charAt(i) >= 123 && (int) newPassword.charAt(i) <= 126);
+                specialCharacters = specialCharacters || ((int) newPassword.charAt(i) >= 32 && (int) newPassword.charAt(i) <= 47) || // "space" ! " # $ % & ' ( ) * + , - . /
+                        ((int) newPassword.charAt(i) >= 58 && (int) newPassword.charAt(i) <= 64) || // : ; < = > ? @
+                        ((int) newPassword.charAt(i) >= 91 && (int) newPassword.charAt(i) <= 96) || // [ \ ] ^ _ `
+                        ((int) newPassword.charAt(i) >= 123 && (int) newPassword.charAt(i) <= 126); // { | } ~
             }
         }
         if (!(digit && uppercase && lowercase && specialCharacters))
