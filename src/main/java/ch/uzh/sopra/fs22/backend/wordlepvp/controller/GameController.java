@@ -2,17 +2,16 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStats;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
-import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.GameService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.graphql.data.method.annotation.Argument;
-import org.springframework.graphql.data.method.annotation.ContextValue;
-import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
@@ -31,11 +30,21 @@ public class GameController {
         return this.gameService.initializeGame(player);
     }
 
-    @MutationMapping //TODO IS IT GAMEROUND?
+    @MutationMapping
     public Mono<GameRound> submitGuess(@Argument @Valid String word, @ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        Mono<GameRound> game = this.gameService.submit(word, player);
+        return this.gameService.submitWord(word, player);
+    }
 
-        return game;
+    @QueryMapping
+    public Mono<GameStats> concludeGame(@ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.gameService.getConclusion(player);
+    }
+
+    @SubscriptionMapping
+    public Flux<GameRound[]> opponentGameRound(@ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.gameService.getOpponentRounds(player);
     }
 }

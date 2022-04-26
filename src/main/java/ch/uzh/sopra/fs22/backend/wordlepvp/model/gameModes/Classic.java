@@ -6,7 +6,6 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStats;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.LetterState;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.time.DateUtils;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -39,6 +38,9 @@ public class Classic implements Game, Serializable {
             gameRound.setWords(previousGuesses);
 
         if (Objects.equals(guess, gameRound.getTargetWord())) {
+            this.concludeGame();
+        }
+        if (guesses >= 6) {
             this.endGame();
         }
 
@@ -74,24 +76,18 @@ public class Classic implements Game, Serializable {
             this.concludeGame();
         }
 
-
         gameRound.setLetterStates(letterState);
         guesses++;
         if (guesses >= 6) {
             this.endGame();
         }
 
-        return gameRound; //TODO change
+        return gameRound;
     }
 
-    // if game is lost
+    // if game is lost/won
     public void endGame() {
         gameRound.setFinish(System.nanoTime());
-
-    }
-
-    // player wins the game
-    public GameStats concludeGame() {
 
         LetterState[][] letterState = gameRound.getLetterStates();
         boolean won = false;
@@ -119,7 +115,10 @@ public class Classic implements Game, Serializable {
             gameStats.setRank(0);
             gameStats.setScore(0);
         }
+    }
 
+    // player wins the game
+    public GameStats concludeGame() {
         return gameStats;
         //conclude stats and show them to the player
         // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score

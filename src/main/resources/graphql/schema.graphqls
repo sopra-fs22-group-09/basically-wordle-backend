@@ -5,7 +5,7 @@ type Query {
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
-    concludeGame: [String]
+    concludeGame: GameStats
 }
 type Mutation {
     register(input: RegisterInput!): User
@@ -30,16 +30,16 @@ type Mutation {
 type Subscription {
     #lobbyList: [Lobby]
     lobby(id: String!): Lobby
-    lobbyInvitations: ID
-    lobbyChat: Message
+    #lobbyInvitations: ID
+    #lobbyChat: Message
 
     #friendStatus: User # I suggest we use player (and thus add status to the player..)
     #friendRequest: ID # ID instead of User
     #chatMessages: Message
 
-    #gameStatusChange: ID # I suggest we create an enum?
+    #gameStatusChange: ID # I suggest we create an enum?       // We probably don't need this? or maybe only for pvp?
     #lobbyReady: ID # I suggest we use the Lobby ID?
-    #opponentState: [OpponentGameState]
+    opponentGameRound: [GameRound]
 }
 #--------------------------------------------------
 input RegisterInput {
@@ -94,11 +94,11 @@ type UserSettings {
     status: UserStatus!
     # ...
 }
-type Player {
-    id: ID!
-    name: String!
-    avatarID: String!
-}
+#type Player {
+#    id: ID!
+#    name: String!
+#    avatarID: String!
+#}
 type Score {
     mode: GameMode!
     score: Int!
@@ -120,11 +120,17 @@ type Game {
     roundTime: Int
     # wordCategories: Categories ??? how
 }
-
 type GameRound {
-    targetWord: String
+    targetWord: String #gonna remove later. only for testing
+    words: [String]
     letterStates: [[LetterState]]
-
+}
+type GameStats {
+    targetWord: String
+    roundsTaken: Int
+    timeTaken: String
+    score: Int
+    rank: Int
 }
 
 type Message {
@@ -132,10 +138,10 @@ type Message {
     message: String
 }
 
-#type OpponentGameState {
-#    playerID: ID
-#    words: [String] #kind of does not make sense? change to [[LetterState]] ???
-#}
+type OpponentGameState {
+    playerID: ID
+    gameRound: GameRound
+}
 #--------------------------------------------------
 enum UserStatus {
     ONLINE

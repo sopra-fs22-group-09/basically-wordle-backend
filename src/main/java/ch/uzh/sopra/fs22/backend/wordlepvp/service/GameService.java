@@ -1,9 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameMode;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
@@ -12,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationTargetException;
@@ -49,7 +47,7 @@ public class GameService {
                 .log();
     }
 
-    public Mono<GameRound> submit(String word, Mono<Player> player) {
+    public Mono<GameRound> submitWord(String word, Mono<Player> player) {
 
         return this.gameRepository.getGameByPlayer(player)
                 .map(game -> {
@@ -60,5 +58,16 @@ public class GameService {
                 .map(Game::getGameRound)
                 .log();
 
+    }
+
+    public Mono<GameStats> getConclusion(Mono<Player> player) {
+
+        return this.gameRepository.getGameByPlayer(player)
+                .map(Game::concludeGame)
+                .log();
+    }
+
+    public Flux<GameRound[]> getOpponentRounds(Mono<Player> player) {
+        return null;
     }
 }

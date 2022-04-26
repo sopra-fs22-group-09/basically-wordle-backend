@@ -1,7 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -17,8 +16,6 @@ public class GameRepository {
     public GameRepository(ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate) {
         this.reactiveRedisTemplate = reactiveRedisTemplate;
     }
-
-    //TODO @COMPILOMATIC : PROB MOVE GAMESTART TO SERVICE AND NOT REPO?
 
     public Mono<Game> getGameByPlayer(Mono<Player> player) {
 
