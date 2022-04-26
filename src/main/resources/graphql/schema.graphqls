@@ -5,7 +5,7 @@ type Query {
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
-    #concludeStats: [String]
+    concludeGame: [String]
 }
 type Mutation {
     register(input: RegisterInput!): User
