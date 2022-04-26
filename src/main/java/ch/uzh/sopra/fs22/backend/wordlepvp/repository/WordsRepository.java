@@ -8,13 +8,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.time.Duration;
-import java.util.Scanner;
+import java.util.*;
 
 @Component
 public class WordsRepository {
@@ -22,30 +24,40 @@ public class WordsRepository {
     private final RedisTemplate<String, String> redisTemplate;
     private final String allWords = "allWords";
 
-    public WordsRepository(RedisTemplate<String, String> redisTemplate) {
+    public WordsRepository(@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection") RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
     public String[] getWordsByTopic(String topic, int count) {
-        if (count < 1) throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Please request a valid number of words."); // TODO should this error be handled differently?
-        if (count > redisTemplate.opsForHash().size(topic)) {
-            cacheWordsFromAPI(topic.equals(allWords) ? "" : topic);
-            if (count > redisTemplate.opsForHash().size(topic))
-                throw new ResponseStatusException(HttpStatus.PARTIAL_CONTENT, "Too many words for the were requested."); // TODO should this error be handled differently?
+        if (count < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please request a valid number of words."); // TODO should this error be handled differently?
+        String sanitizedTopic = topic.replaceAll("[^A-Za-z]", ""); //Sanitize all non-alphabetic characters to prevent API abuse
+        if (sanitizedTopic.equals("")) sanitizedTopic = allWords;
+
+        //Check whether there are enough words in the repository:
+        //If not fetch from api and check again. if there are still not enough words throw error.
+        if (count > redisTemplate.opsForHash().size(sanitizedTopic)) {
+            cacheWordsFromAPI(sanitizedTopic);
+            if (count > redisTemplate.opsForHash().size(sanitizedTopic))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Too many words for the were requested."); // TODO should this error be handled differently?
         }
 
+        //Convert result to object array, then copy the content to a new string array and return it.
+        return Arrays.copyOf(Objects.requireNonNull(redisTemplate.opsForHash().randomEntries(sanitizedTopic, count)).values().toArray(), count, String[].class);
+    }
+
+    public String[] getWordsByTopics(String[] topics, int count) {
+        if (topics.length < 1) return getRandomWords(count);
+        if (topics.length == 1) return getWordsByTopic(topics[0], count);
+        String[][] tmp = new String[topics.length][];
+        for (int i = 0; i < topics.length; ++i) tmp[i] = getWordsByTopic(topics[i], count);
         String[] words = new String[count];
-        boolean skip = false;
-        for (int i = 0; i < words.length; ++i) {
-            String word = redisTemplate.opsForHash().randomEntry(topic).getValue().toString();
-
-            for (int j = 0; j < i; ++j) {
-                skip = words[j].equals(word);
-                if (skip) break;
-            }
-
-            if (skip) --i;
-            else words[i] = word;
+        for (int i = 0; i < count; ++i) {
+            int y = new Random().nextInt(topics.length);
+            int x = new Random().nextInt(count);
+            if (tmp[y][x] != null) { //Prevent selecting more than once the same word
+                words[i] = tmp[y][x];
+                tmp[y][x] = null;
+            } else --i;
         }
         return words;
     }
@@ -56,35 +68,32 @@ public class WordsRepository {
 
     private void cacheWordsFromAPI(String topic) {
         try {
-            URL url = new URL("https://api.datamuse.com/words?sp=?????&max=1000&topics=" + topic);
+            URL url = new URL("https://api.datamuse.com/words?sp=?????&max=1000" + (topic.equals(allWords) ? "" : "&topics=" + topic));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.connect();
             if(conn.getResponseCode() == 200) {
-                Scanner scan = new Scanner(url.openStream());
-                while(scan.hasNext()) {
-                    JSONArray js = (JSONArray) new JSONParser().parse(scan.nextLine());
-
-                    for (int i = 0; i < js.size(); ++i) {
-                        String word = ((JSONObject) js.get(i)).get("word").toString();
-                        redisTemplate.opsForHash().put(topic, word, word);
-                        // TODO if one topic is chosen often allWords will always contain (at least) words of this topic
-                        //  but it should contain words of all topics
-                        redisTemplate.opsForHash().put(allWords, word, word);
+                BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+                HashMap<String, String> tmp = new HashMap<>();
+                String inputLine;
+                while((inputLine = in.readLine()) != null) {
+                    for (Object j : (JSONArray) new JSONParser().parse(inputLine)) {
+                        String word = ((JSONObject) j).get("word").toString();
+                        // Don't establish a connection to redis every time
+                        // Instead collect all words and put them all together to redis
+                        tmp.put(word, word);
                     }
                 }
+                redisTemplate.opsForHash().putAll(topic, tmp);
                 redisTemplate.expire(topic, Duration.ofDays(1));
-                if (redisTemplate.getExpire(allWords) != null && redisTemplate.getExpire(allWords) <= 0)
-                    redisTemplate.expire(allWords, Duration.ofDays(1));
-
 
             } else throw new ProtocolException();
         } catch (ProtocolException | MalformedURLException e) {
             // TODO should this error be handled differently?
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Something went wrong while fetching data from the external API. Please try again in a few minutes.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while fetching data from the external API. Please try again in a few minutes.");
         } catch (IOException | ParseException e) {
             // TODO should this error be handled differently?
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Something went wrong while processing the fetched data from the external API. Please try again in a few minutes.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while processing the fetched data from the external API. Please try again in a few minutes.");
         }
     }
 }
