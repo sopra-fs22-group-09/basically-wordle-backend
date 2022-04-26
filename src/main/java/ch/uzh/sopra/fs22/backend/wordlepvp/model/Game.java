@@ -4,6 +4,9 @@ public interface Game {
 
     //TODO: implements max rounds & maxtime for backend ?
 
+    String getId();
+    void setId(String id);
+
     int getAmountRounds();
     void setAmountRounds(int amountRounds);
 

@@ -25,13 +25,13 @@ public class PlayerService {
         this.authRepository = authRepository;
     }
 
-    public Mono<Player> createPlayer(User user, String id) {
+    public Mono<Player> createPlayer(User user, String lobbyId) {
 
         Player player = Player.builder()
                 .id(user.getId().toString())
                 .name(user.getUsername())
                 .avatarID(user.getAvatarID())
-                .lobbyId(id)
+                .lobbyId(lobbyId)
                 .build();
 
         return playerRepository.savePlayer(player);

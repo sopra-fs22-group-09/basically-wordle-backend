@@ -14,8 +14,10 @@ import java.util.Objects;
 @NoArgsConstructor
 public class Classic implements Game, Serializable {
 
-    public int amountRounds = 1;
-    public int roundTime = 0;
+    private String id;
+
+    private int amountRounds = 1;
+    private int roundTime = 0;
     private int guesses = 0;
 
     private boolean guessed = false;
@@ -42,10 +44,6 @@ public class Classic implements Game, Serializable {
         }
             previousGuesses[guesses] = guess;
             gameRound.setWords(previousGuesses);
-
-      //  if (Objects.equals(guess, gameRound.getTargetWord())) {
-      //      this.endGame();
-      //  }
 
         String[] guess_chars = guess.split("");
         String[] targetWord_chars = gameRound.getTargetWord().split("");

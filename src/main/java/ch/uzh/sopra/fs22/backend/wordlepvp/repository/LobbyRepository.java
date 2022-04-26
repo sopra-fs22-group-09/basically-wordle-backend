@@ -47,16 +47,7 @@ public class LobbyRepository {
                 .players(new HashSet<>())
                 .build();
 
-        Game game = gameService.createGame(lobby.getGameMode());
-        lobby.setGame(game);
-
-/*        try {
-            Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + lobby.getGameMode().getClassName()).asSubclass(Game.class);
-            Game game = gameClass.getDeclaredConstructor().newInstance();
-            lobby.setGame(game);
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
-        }*/
+        lobby.setGame(gameService.createGame(lobby.getGameMode()));
 
         return this.reactiveRedisTemplate.opsForHash()
                 .put("lobbies", lobby.getId(), lobby)
@@ -135,6 +126,11 @@ public class LobbyRepository {
                         })
                         .doOnNext(l -> reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe())
                         .subscribe());
+    }
+
+    public Mono<Game> getGameByLobbyId(String id) {
+        return this.reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
+                .map(Lobby::getGame);
     }
 
     public Flux<Lobby> getAllLobbies() {

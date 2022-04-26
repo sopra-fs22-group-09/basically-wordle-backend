@@ -2,7 +2,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
-import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,11 +19,13 @@ import java.lang.reflect.InvocationTargetException;
 public class GameService {
 
     private final GameRepository gameRepository;
+    private final LobbyRepository lobbyRepository;
     private final WordsRepository wordsRepository;
 
     @Autowired
-    public GameService(GameRepository gameRepository, WordsRepository wordsRepository) {
+    public GameService(GameRepository gameRepository, LobbyRepository lobbyRepository, WordsRepository wordsRepository) {
         this.gameRepository = gameRepository;
+        this.lobbyRepository = lobbyRepository;
         this.wordsRepository = wordsRepository;
     }
 
@@ -38,33 +40,54 @@ public class GameService {
 
     public Mono<Game> initializeGame(Mono<Player> player) {
 
-        return this.gameRepository.getGameByPlayer(player)
+        return player.map(Player::getLobbyId)
+                .flatMap(this.lobbyRepository::getGameByLobbyId)
+                .map(game -> game.start(wordsRepository.getRandomWords(250)))
+                .flatMap(game -> this.gameRepository.saveGame(game.getId(), game))
+                .log();
+
+/*        return this.gameRepository.getGameByPlayer(player)
                 .map(game -> {
                     game.start(wordsRepository.getRandomWords(250));
                     return game;
                 })
                 .flatMap(game -> this.gameRepository.updateGameByPlayer(player, game))
-                .log();
+                .log();*/
     }
 
     public Mono<GameRound> submitWord(String word, Mono<Player> player) {
 
-        return this.gameRepository.getGameByPlayer(player)
+        return player.map(Player::getLobbyId)
+                .flatMap(this.gameRepository::getGame)
+                .map(game -> {
+                    game.guess(word);
+                    return game;
+                })
+                .flatMap(game -> this.gameRepository.saveGame(game.getId(), game))
+                .map(Game::getGameRound)
+                .log();
+
+/*        return this.gameRepository.getGameByPlayer(player)
                 .map(game -> {
                     game.guess(word);
                     return game;
                 })
                 .flatMap(game -> this.gameRepository.updateGameByPlayer(player, game))
                 .map(Game::getGameRound)
-                .log();
+                .log();*/
 
     }
 
     public Mono<GameStats> getConclusion(Mono<Player> player) {
 
-        return this.gameRepository.getGameByPlayer(player)
+        return player.map(Player::getLobbyId)
+                .flatMap(this.gameRepository::getGame)
                 .map(Game::concludeGame)
                 .log();
+
+/*        return this.gameRepository.getGameByPlayer(player)
+                .map(Game::concludeGame)
+                .log();*/
     }
 
     public Flux<GameRound[]> getOpponentRounds(Mono<Player> player) {
