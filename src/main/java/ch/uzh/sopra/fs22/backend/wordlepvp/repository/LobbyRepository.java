@@ -45,7 +45,9 @@ public class LobbyRepository {
                 .players(new HashSet<>())
                 .build();
 
-        lobby.setGame(this.createGame(lobby.getGameMode()));
+        Game game = this.createGame(lobby.getGameMode());
+        game.setId(lobby.getId());
+        lobby.setGame(game);
 
         return this.reactiveRedisTemplate.opsForHash()
                 .put("lobbies", lobby.getId(), lobby)
@@ -79,7 +81,9 @@ public class LobbyRepository {
                 .mapNotNull(l -> {
                     if (l.getGameMode() != gameSettings.getGameMode()) {
                         l.setGameMode(gameSettings.getGameMode());
-                        l.setGame(this.createGame(l.getGameMode()));
+                        Game game = this.createGame(l.getGameMode());
+                        game.setId(l.getId());
+                        l.setGame(game);
                     } else {
                         l.getGame().setAmountRounds(gameSettings.getAmountRounds());
                         l.getGame().setRoundTime(gameSettings.getRoundTime());
