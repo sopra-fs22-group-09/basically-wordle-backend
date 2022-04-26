@@ -12,6 +12,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.core.RedisKeyValueAdapter.EnableKeyspaceEvents;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.data.redis.repository.support.RedisRepositoryFactoryBean;
@@ -21,7 +22,7 @@ import java.util.UUID;
 
 @SuppressWarnings("CommentedOutCode")
 @Configuration
-@EnableRedisRepositories
+@EnableRedisRepositories(enableKeyspaceEvents = EnableKeyspaceEvents.ON_STARTUP)
 @ConfigurationProperties("spring.redis")
 @EnableConfigurationProperties(RedisProperties.class)
 public class RedisConfig {

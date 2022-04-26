@@ -89,7 +89,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: '*'
 
 logging:
   level:
