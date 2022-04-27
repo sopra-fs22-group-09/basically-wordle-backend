@@ -4,6 +4,8 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.GameSettingsInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
@@ -20,6 +23,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class LobbyService {
+
+    private final Logger log = LoggerFactory.getLogger(LobbyService.class);
 
     private final LobbyRepository lobbyRepository;
 
@@ -34,7 +39,7 @@ public class LobbyService {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Lobby size is too big.");
         }
 
-        return player.map(p -> {
+        return player.publishOn(Schedulers.boundedElastic()).map(p -> {
             Lobby lobby = Lobby.builder()
                     .id(UUID.randomUUID().toString())
                     .name(input.getName())
@@ -78,6 +83,7 @@ public class LobbyService {
                     }
                     return l;
                 })
+                .publishOn(Schedulers.boundedElastic())
                 .mapNotNull(l -> {
                     if (l.getGameMode() != input.getGameMode()) {
                         l.setGameMode(input.getGameMode());
@@ -89,6 +95,11 @@ public class LobbyService {
                     return l;
                 })
                 .flatMap(this.lobbyRepository::saveLobby)
+                // TODO: THIS DOES THE SAME AS BELOW (but is shorter)
+//                .onErrorMap(e -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to change settings!"))
+                .doOnError(e -> {
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to change settings!");
+                })
                 .log();
 
     }
@@ -97,7 +108,9 @@ public class LobbyService {
 
         return player.map(Player::getLobbyId)
                 .flatMapMany(this.lobbyRepository::getLobbyStream)
+                .publishOn(Schedulers.boundedElastic())
                 .doFinally(s -> this.lobbyRepository.getAllLobbies()
+                        .publishOn(Schedulers.boundedElastic())
                         .zipWith(player, (l, p) -> {
                             l.getPlayers().remove(p);
 
@@ -109,13 +122,13 @@ public class LobbyService {
                             if (!l.getPlayers().isEmpty()) {
                                 this.lobbyRepository.saveLobby(l).subscribe();
                             } else {
-                                this.lobbyRepository.deleteLobby(l.getId());
+                                log.info("Lobby deletion returned: " + this.lobbyRepository.deleteLobby(l.getId())
+                                        .subscribe());
                             }
                             return l;
                         }).subscribe()
                 )
                 .log();
-
     }
 
     public Flux<Lobby> getLobbies() {

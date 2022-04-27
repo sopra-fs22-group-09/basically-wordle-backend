@@ -16,7 +16,8 @@ type Mutation {
     #updateUserProfile(input: UserSettingsInput!): User
 
     createLobby(input: LobbyInput!): Lobby
-    joinLobbyById(id: String!): Lobby
+    joinLobbyById(id: ID!): Lobby
+    #deleteLobby(id: ID!): Boolean
     updateLobbySettings(input: GameSettingsInput!): Lobby
     #sendLobbyMessage(message: String!): String
 
