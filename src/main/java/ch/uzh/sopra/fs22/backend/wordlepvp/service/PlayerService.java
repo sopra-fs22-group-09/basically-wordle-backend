@@ -34,12 +34,12 @@ public class PlayerService {
                 .lobbyId(lobbyId)
                 .build();
 
-        return playerRepository.savePlayer(player);
+        return this.playerRepository.savePlayer(player);
     }
 
     public Mono<Player> getFromToken(String token) {
 
-        return playerRepository.findById(authRepository.getUserID(token).toString())
+        return this.playerRepository.findById(this.authRepository.getUserID(token).toString())
                 .doOnNext(player -> {
                     if (player == null) {
                         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player does not exist!");
