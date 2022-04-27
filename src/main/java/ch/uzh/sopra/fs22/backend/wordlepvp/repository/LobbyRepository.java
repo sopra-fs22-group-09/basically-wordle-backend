@@ -24,14 +24,12 @@ public class LobbyRepository {
         this.reactiveRedisTemplate = reactiveRedisTemplate;
     }
 
-    // TODO: Check for lobby name duplicates
-    // TODO: get max values for other attributes (set max for a category) ?? maybe change ??
+    // TODO: Check for lobby name duplicates ? maybe. or maybe not. or no, not at all.
     // TODO: handle 2 browser sessions, change status on full & allow entry if not full
 
     public Mono<Lobby> saveLobby(LobbyInput input, User player) {
 
-        if (input.getGameCategory() == GameCategory.PVP && input.getSize() > 6 ||
-            input.getGameCategory() == GameCategory.COOP && input.getSize() > 4) {
+        if (input.getSize() > input.getGameCategory().getMaxGameSize()) {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Lobby size is too big.");
         }
 
@@ -46,22 +44,19 @@ public class LobbyRepository {
                 .players(new HashSet<>())
                 .build();
 
-        try {
-            Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + lobby.getGameMode().getClassName()).asSubclass(Game.class);
-            Game game = gameClass.getDeclaredConstructor().newInstance();
-            lobby.setGame(game);
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
-        }
+        Game game = this.createGame(lobby.getGameMode());
+        game.setId(lobby.getId());
+        lobby.setGame(game);
 
-        return this.reactiveRedisTemplate.opsForHash().put("lobbies", lobby.getId(), lobby)
+        return this.reactiveRedisTemplate.opsForHash()
+                .put("lobbies", lobby.getId(), lobby)
                 .map(l -> lobby)
                 .log();
     }
 
     public Mono<Lobby> playerJoinLobby(String id, User player) {
 
-        return reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
+        return this.reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
                 .mapNotNull(l -> {
                     l.getPlayers().add(player);
                     return l;
@@ -71,45 +66,23 @@ public class LobbyRepository {
                 .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe());
     }
 
-/*    public Mono<Lobby> playerLeaveLobby(User player) {
-
-        return this.reactiveRedisTemplate.<String, Lobby>opsForHash().values("lobbies")
-                .filter(l -> l.getPlayers().contains(player))
-                .mapNotNull(l -> {
-                    l.getPlayers().remove(player);
-                    return l;
-                })
-                .single()
-                .publishOn(Schedulers.boundedElastic())
-                .doOnNext(l -> this.reactiveRedisTemplate.<String, Lobby>opsForHash().put("lobbies", l.getId(), l).subscribe())
-                .doOnNext(l -> {
-                    if (l.getPlayers().isEmpty()) {
-                        reactiveRedisTemplate.<String, Lobby>opsForHash().remove("lobbies", l.getId()).subscribe();
-                    }
-                })
-                .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe());
-    }*/
-
     public Mono<Lobby> changeLobby(String id, GameSettingsInput gameSettings, User player) {
 
         return this.reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
-                .mapNotNull(l -> {
-                    if (l.getOwner() != player) {
+                .doOnNext(l -> {
+                    if (!Objects.equals(l.getOwner().getId(), player.getId())) {
                         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to change settings!");
                     }
                     if (GameCategory.valueOf(gameSettings.getGameMode().getCategory()) != l.getGameCategory()) {
                         throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "GameMode is not supported by current GameCategory!");
                     }
+                })
+                .mapNotNull(l -> {
                     if (l.getGameMode() != gameSettings.getGameMode()) {
                         l.setGameMode(gameSettings.getGameMode());
-                        try {
-                            Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + l.getGameMode().getClassName()).asSubclass(Game.class);
-                            Game game = gameClass.getDeclaredConstructor().newInstance();
-                            l.setGame(game);
-                        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                            e.printStackTrace();
-                            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find specified Game!");
-                        }
+                        Game game = this.createGame(l.getGameMode());
+                        game.setId(l.getId());
+                        l.setGame(game);
                     } else {
                         l.getGame().setAmountRounds(gameSettings.getAmountRounds());
                         l.getGame().setRoundTime(gameSettings.getRoundTime());
@@ -129,7 +102,7 @@ public class LobbyRepository {
                 .map(ReactiveSubscription.Message::getMessage)
                 .log()
                 .publishOn(Schedulers.boundedElastic())
-                .doFinally(s -> reactiveRedisTemplate.<String, Lobby>opsForHash().values("lobbies")
+                .doFinally(s -> this.reactiveRedisTemplate.<String, Lobby>opsForHash().values("lobbies")
                         .filter(l -> l.getPlayers().contains(player))
                         .publishOn(Schedulers.boundedElastic())
                         .doOnNext(l -> {
@@ -137,18 +110,32 @@ public class LobbyRepository {
                             if (!l.getPlayers().contains(l.getOwner()) && l.getPlayers().stream().findFirst().isPresent()) {
                                 l.setOwner(l.getPlayers().stream().findFirst().get());
                             }
-                            reactiveRedisTemplate.<String, Lobby>opsForHash().put("lobbies", l.getId(), l).subscribe();
+                            this.reactiveRedisTemplate.<String, Lobby>opsForHash().put("lobbies", l.getId(), l).subscribe();
                         })
                         .doOnNext(l -> {
                             if (l.getPlayers().isEmpty()) {
-                                reactiveRedisTemplate.<String, Lobby>opsForHash().remove("lobbies", l.getId()).subscribe();
+                                this.reactiveRedisTemplate.<String, Lobby>opsForHash().remove("lobbies", l.getId()).subscribe();
                             }
                         })
-                        .doOnNext(l -> reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe())
+                        .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbyplayers/" + l.getId(), l).subscribe())
                         .subscribe());
     }
 
     public Flux<Lobby> getAllLobbies() {
         return this.reactiveRedisTemplate.<String, Lobby>opsForHash().values("lobbies");
+    }
+
+    public Mono<Game> getGameByLobbyId(String id) {
+        return this.reactiveRedisTemplate.<String, Lobby>opsForHash().get("lobbies", id)
+                .map(Lobby::getGame);
+    }
+
+    public Game createGame(GameMode gameMode) {
+        try {
+            Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + gameMode.getClassName()).asSubclass(Game.class);
+            return gameClass.getDeclaredConstructor().newInstance();
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
+        }
     }
 }

@@ -37,7 +37,6 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String passwordHash;
 
-    //    @Column(nullable = false)
     @Column(nullable = true)
     private String avatarID;
 

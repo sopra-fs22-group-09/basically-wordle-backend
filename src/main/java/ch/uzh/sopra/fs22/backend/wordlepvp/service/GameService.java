@@ -1,0 +1,96 @@
+package ch.uzh.sopra.fs22.backend.wordlepvp.service;
+
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.lang.reflect.InvocationTargetException;
+
+@Service
+@Transactional
+public class GameService {
+
+    private final GameRepository gameRepository;
+    private final LobbyRepository lobbyRepository;
+    private final WordsRepository wordsRepository;
+
+    @Autowired
+    public GameService(GameRepository gameRepository, LobbyRepository lobbyRepository, WordsRepository wordsRepository) {
+        this.gameRepository = gameRepository;
+        this.lobbyRepository = lobbyRepository;
+        this.wordsRepository = wordsRepository;
+    }
+
+/*    public Game createGame(GameMode gameMode) {
+        try {
+            Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + gameMode.getClassName()).asSubclass(Game.class);
+            return gameClass.getDeclaredConstructor().newInstance();
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
+        }
+    }*/
+
+    public Mono<Game> initializeGame(Mono<Player> player) {
+
+        return player.map(Player::getLobbyId)
+                .flatMap(this.lobbyRepository::getGameByLobbyId)
+                .map(game -> game.start(wordsRepository.getRandomWords(250)))
+                .flatMap(game -> this.gameRepository.saveGame(game.getId(), game))
+                .log();
+
+/*        return this.gameRepository.getGameByPlayer(player)
+                .map(game -> {
+                    game.start(wordsRepository.getRandomWords(250));
+                    return game;
+                })
+                .flatMap(game -> this.gameRepository.updateGameByPlayer(player, game))
+                .log();*/
+    }
+
+    public Mono<GameRound> submitWord(String word, Mono<Player> player) {
+
+        return player.map(Player::getLobbyId)
+                .flatMap(this.gameRepository::getGame)
+                .map(game -> {
+                    game.guess(word);
+                    return game;
+                })
+                .flatMap(game -> this.gameRepository.saveGame(game.getId(), game))
+                .map(Game::getGameRound)
+                .log();
+
+/*        return this.gameRepository.getGameByPlayer(player)
+                .map(game -> {
+                    game.guess(word);
+                    return game;
+                })
+                .flatMap(game -> this.gameRepository.updateGameByPlayer(player, game))
+                .map(Game::getGameRound)
+                .log();*/
+
+    }
+
+    public Mono<GameStats> getConclusion(Mono<Player> player) {
+
+        return player.map(Player::getLobbyId)
+                .flatMap(this.gameRepository::getGame)
+                .map(Game::concludeGame)
+                .log();
+
+/*        return this.gameRepository.getGameByPlayer(player)
+                .map(Game::concludeGame)
+                .log();*/
+    }
+
+    public Flux<GameRound[]> getOpponentRounds(Mono<Player> player) {
+        return null;
+    }
+}
