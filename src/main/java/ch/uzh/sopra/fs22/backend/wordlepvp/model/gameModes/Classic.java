@@ -23,7 +23,6 @@ public class Classic implements Game, Serializable {
     private boolean guessed = false;
 
     private GameRound gameRound;
-
     private GameStats gameStats;
 
     public Game start(String[] repoWords) {
@@ -94,8 +93,6 @@ public class Classic implements Game, Serializable {
     // if game is lost/won
     public void endGame() {
         gameRound.setFinish(System.nanoTime());
-
-
     }
 
     // player wins the game
