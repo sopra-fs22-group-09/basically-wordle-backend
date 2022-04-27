@@ -28,9 +28,9 @@ public class Lobby implements Serializable {
 
     private int size;
 
-    private User owner;
+    private Player owner;
 
-    private Set<User> players;
+    private Set<Player> players;
 
     private GameCategory gameCategory;
 

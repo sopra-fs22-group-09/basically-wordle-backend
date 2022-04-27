@@ -3,7 +3,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
-import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.service.LobbyService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
@@ -23,38 +23,38 @@ import javax.validation.Valid;
 @RequiredArgsConstructor
 public class LobbyController {
 
-    private final LobbyRepository lobbyRepository;
+    private final LobbyService lobbyService;
     private final UserService userService;
     private final PlayerService playerService;
 
     @MutationMapping
     public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input, @ContextValue(name = "Authorization") String authHeader) {
-        User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.lobbyRepository.saveLobby(input, player);
+        User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        Mono<Player> player = this.playerService.createPlayer(user, null);
+        return this.lobbyService.initializeLobby(input, player);
     }
 
     @MutationMapping
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
-        User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        Mono<Player> testPlayer = this.playerService.createPlayer(player, id);//TODO Probably needs to change to only player in lobby
-        testPlayer.subscribe(player1 -> System.out.println("WIUIUIUIU   " + player1));
-        return this.lobbyRepository.playerJoinLobby(id, player);
+        User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        Mono<Player> player = this.playerService.createPlayer(user, id);
+        return this.lobbyService.addPlayerToLobby(id, player);
     }
 
     @MutationMapping
-    public Mono<Lobby> updateLobbySettings(@Argument @Valid String id, @Argument @Valid GameSettingsInput gameSettings, @ContextValue(name = "Authorization") String authHeader) {
-        User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.lobbyRepository.changeLobby(id, gameSettings, player);
+    public Mono<Lobby> updateLobbySettings(@Argument @Valid GameSettingsInput input, @ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.lobbyService.changeLobby(input, player);
     }
 
     @SubscriptionMapping
     public Flux<Lobby> lobby(@Argument @Valid String id, @ContextValue("Authorization") String authHeader) {
-        User player = userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.lobbyRepository.getLobbyStream(id, player);
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.lobbyService.subscribeLobby(player);
     }
 
     @QueryMapping
     public Flux<Lobby> getLobbies() {
-        return this.lobbyRepository.getAllLobbies();
+        return this.lobbyService.getLobbies();
     }
 }

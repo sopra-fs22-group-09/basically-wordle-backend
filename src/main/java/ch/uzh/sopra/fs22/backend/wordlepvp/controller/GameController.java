@@ -45,6 +45,6 @@ public class GameController {
     @SubscriptionMapping
     public Flux<GameRound[]> opponentGameRound(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.gameService.getOpponentRounds(player);
+        return this.gameService.getOpponentGameRounds(player);
     }
 }
