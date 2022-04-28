@@ -34,7 +34,7 @@ public class Classic implements Game, Serializable {
 
     public GameRound guess(String guess) {
 
-        if (this.guessed) {
+        if (this.guessed || guess.length() != 5) {
             return null;
         }
         String[] previousGuesses = gameRound.getWords();
