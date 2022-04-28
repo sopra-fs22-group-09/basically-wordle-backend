@@ -1,7 +1,7 @@
 #scalar Date
 type Query {
     getLobbies: [Lobby]
-    profileByUserId(id: Int!): User
+    profileByUserId(id: ID!): User
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
@@ -30,7 +30,7 @@ type Mutation {
 }
 type Subscription {
     #lobbyList: [Lobby]
-    lobby(id: String!): Lobby
+    lobby(id: ID!): Lobby
     #lobbyInvitations: ID
     #lobbyChat: Message
 
@@ -90,7 +90,7 @@ type User {
     status: UserStatus
 }
 type Player {
-    id: String
+    id: ID
     name: String
     avatarId: String
     lobbyId: String
