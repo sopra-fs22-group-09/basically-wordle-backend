@@ -1,10 +1,12 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
+import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Component
 public class GameRepository {
@@ -19,6 +21,8 @@ public class GameRepository {
         return this.reactiveRedisTemplate.<String, Game>opsForHash()
                 .put("games", game.getId(), game)
                 .map(g -> game)
+                .publishOn(Schedulers.boundedElastic())
+                .doOnNext(g -> this.reactiveRedisTemplate.convertAndSend("game/" + g.getId(), g).subscribe())
                 .log();
 
     }
@@ -26,6 +30,7 @@ public class GameRepository {
     public void deleteGame(String id) {
         this.reactiveRedisTemplate.<String, Game>opsForHash()
                 .remove("games", id)
+                //.publishOn(Schedulers.boundedElastic()) //needed?
                 .subscribe();
 
     }
@@ -35,5 +40,12 @@ public class GameRepository {
                 .get("games", id)
                 .log();
 
+    }
+
+    public Flux<Game> getGameRoundsStream(String id) {
+        return this.reactiveRedisTemplate.listenToChannel("game/" + id)
+                .map(ReactiveSubscription.Message::getMessage)
+                .publishOn(Schedulers.boundedElastic())
+                .log();
     }
 }

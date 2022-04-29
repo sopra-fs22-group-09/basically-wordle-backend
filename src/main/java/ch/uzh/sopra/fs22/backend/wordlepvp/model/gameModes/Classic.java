@@ -1,14 +1,13 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStats;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.LetterState;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -22,17 +21,20 @@ public class Classic implements Game, Serializable {
 
     private boolean guessed = false;
 
+    Random r = new Random();
     private GameRound gameRound;
     private GameStats gameStats;
 
-    public Game start(String[] repoWords) {
-        this.gameRound = new GameRound(repoWords);
+    public Game start(Set<Player> players, String[] repoWords) {
+        if (players.stream().findFirst().isPresent()) {
+            this.gameRound = new GameRound(players.stream().findFirst().get(), 0, repoWords[this.r.nextInt(repoWords.length)]);
+        }
         this.gameStats = new GameStats();
         gameRound.setStart(System.nanoTime());
         return this;
     }
 
-    public GameRound guess(String guess) {
+    public Game guess(Player player, String guess) {
 
         if (this.guessed) {
             return null;
@@ -87,7 +89,7 @@ public class Classic implements Game, Serializable {
             this.endGame();
         }
 
-        return gameRound;
+        return this;
     }
 
     // if game is lost/won
@@ -129,5 +131,17 @@ public class Classic implements Game, Serializable {
         return gameStats;
         //conclude stats and show them to the player
         // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score
+    }
+
+    public Game newGameRound(Player player) {
+        return this;
+    }
+
+    public GameRound getCurrentGameRound(Player player) {
+        return null;
+    }
+
+    public GameRound[] getCurrentOpponentGameRounds(Player player) {
+        return null;
     }
 }

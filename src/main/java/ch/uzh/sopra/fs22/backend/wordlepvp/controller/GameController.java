@@ -36,6 +36,12 @@ public class GameController {
         return this.gameService.submitWord(word, player);
     }
 
+    @MutationMapping
+    public Mono<GameRound> nextGameRound(@ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.gameService.initializeNextGameRound(player);
+    }
+
     @QueryMapping
     public Mono<GameStats> concludeGame(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
