@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -21,7 +22,7 @@ public class Classic implements Game, Serializable {
 
     private boolean guessed = false;
 
-    Random r = new Random();
+    private final Random r = new SecureRandom();
     private GameRound gameRound;
     private GameStats gameStats;
 

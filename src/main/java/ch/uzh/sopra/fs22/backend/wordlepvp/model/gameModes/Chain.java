@@ -9,8 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.security.SecureRandom;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -23,7 +23,7 @@ public class Chain implements Game, Serializable {
     private int amountRounds = 1;
     private int roundTime = 0;
 
-    Random r = new Random();
+    private final Random r = new SecureRandom();
     private String[] repoWords;
     private String[] targetWords;
     private Map<Player, GameRound[]> game;

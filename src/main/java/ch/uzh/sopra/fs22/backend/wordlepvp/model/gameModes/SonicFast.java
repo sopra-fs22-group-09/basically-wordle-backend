@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.security.SecureRandom;
 import java.util.*;
 
 @Data
@@ -20,7 +21,7 @@ public class SonicFast implements Game, Serializable {
     private int amountRounds = 1;
     private int roundTime = 0;
 
-    Random r = new Random();
+    private final Random r = new SecureRandom();
     private String[] repoWords;
     private String[] targetWords;
     private Map<Player, GameRound[]> game;
