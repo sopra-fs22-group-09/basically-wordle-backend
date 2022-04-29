@@ -48,7 +48,7 @@ public class LobbyController {
     }
 
     @SubscriptionMapping
-    public Flux<Lobby> lobby(@Argument @Valid String id, @ContextValue("Authorization") String authHeader) {
+    public Flux<Lobby> lobby(@ContextValue("Authorization") String authHeader) {
         Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.lobbyService.subscribeLobby(player);
     }

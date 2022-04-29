@@ -29,9 +29,19 @@ public class GameService {
 
         return player.map(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
-                .map(Lobby::getGame)
-                .map(game -> game.start(wordsRepository.getRandomWords(250)))
+                .map(l -> l.getGame().start(l.getPlayers(), this.wordsRepository.getRandomWords(250)))
                 .flatMap(this.gameRepository::saveGame)
+                .log();
+
+    }
+
+    public Mono<GameRound> initializeNextGameRound(Mono<Player> player) {
+
+        return player.map(Player::getLobbyId)
+                .flatMap(this.gameRepository::getGame)
+                .zipWith(player, Game::newGameRound)
+                .flatMap(this.gameRepository::saveGame)
+                .zipWith(player, Game::getCurrentGameRound)
                 .log();
 
     }
@@ -40,12 +50,9 @@ public class GameService {
 
         return player.map(Player::getLobbyId)
                 .flatMap(this.gameRepository::getGame)
-                .map(game -> {
-                    game.guess(word);
-                    return game;
-                })
+                .zipWith(player, (g, p) -> g.guess(p, word))
                 .flatMap(this.gameRepository::saveGame)
-                .map(Game::getGameRound)
+                .zipWith(player, Game::getCurrentGameRound)
                 .log();
 
     }
@@ -60,6 +67,11 @@ public class GameService {
     }
 
     public Flux<GameRound[]> getOpponentGameRounds(Mono<Player> player) {
-        return null;
+
+        return player.map(Player::getLobbyId)
+                .flatMapMany(this.gameRepository::getGameRoundsStream)
+                .zipWith(player, Game::getCurrentOpponentGameRounds)
+                .log();
+
     }
 }
