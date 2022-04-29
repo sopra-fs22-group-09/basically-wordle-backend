@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
@@ -48,6 +49,7 @@ public class LobbyService {
             lobby.setGame(this.createGame(lobby.getId(), lobby.getGameMode()));
             return lobby;
         })
+                .publishOn(Schedulers.boundedElastic())
                 .flatMap(this.lobbyRepository::saveLobby)
                 .log();
 
@@ -60,6 +62,7 @@ public class LobbyService {
                     l.getPlayers().add(p);
                     return l;
                 })
+                .publishOn(Schedulers.boundedElastic())
                 .flatMap(this.lobbyRepository::saveLobby)
                 .log();
 
@@ -78,6 +81,7 @@ public class LobbyService {
                     }
                     return l;
                 })
+                .publishOn(Schedulers.boundedElastic())
                 .mapNotNull(l -> {
                     if (l.getGameMode() != input.getGameMode()) {
                         l.setGameMode(input.getGameMode());
@@ -97,7 +101,9 @@ public class LobbyService {
 
         return player.map(Player::getLobbyId)
                 .flatMapMany(this.lobbyRepository::getLobbyStream)
+                .publishOn(Schedulers.boundedElastic())
                 .doFinally(s -> this.lobbyRepository.getAllLobbies()
+                        .publishOn(Schedulers.boundedElastic())
                         .zipWith(player, (l, p) -> {
                             l.getPlayers().remove(p);
 

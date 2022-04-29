@@ -1,7 +1,7 @@
 #scalar Date
 type Query {
     getLobbies: [Lobby]
-    profileByUserId(id: Int!): User
+    profileByUserId(id: ID!): User
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
@@ -16,7 +16,8 @@ type Mutation {
     #updateUserProfile(input: UserSettingsInput!): User
 
     createLobby(input: LobbyInput!): Lobby
-    joinLobbyById(id: String!): Lobby
+    joinLobbyById(id: ID!): Lobby
+    #deleteLobby(id: ID!): Boolean
     updateLobbySettings(input: GameSettingsInput!): Lobby
     #sendLobbyMessage(message: String!): String
 
@@ -25,11 +26,12 @@ type Mutation {
 
     startGame: Game
     submitGuess(word: String!): GameRound
+    nextGameRound: GameRound
     #playAgain: ID # I suggest we use the Lobby ID?
 }
 type Subscription {
     #lobbyList: [Lobby]
-    lobby(id: String!): Lobby
+    lobby: Lobby
     #lobbyInvitations: ID
     #lobbyChat: Message
 
@@ -89,7 +91,7 @@ type User {
     status: UserStatus
 }
 type Player {
-    id: String
+    id: ID
     name: String
     avatarId: String
     lobbyId: String
@@ -100,11 +102,6 @@ type UserSettings {
     status: UserStatus!
     # ...
 }
-#type Player {
-#    id: ID!
-#    name: String!
-#    avatarID: String!
-#}
 type Score {
     mode: GameMode!
     score: Int!
@@ -127,9 +124,15 @@ type Game {
     # wordCategories: Categories ??? how
 }
 type GameRound {
+    player: Player
+    currentRound: Int
     targetWord: String #gonna remove later. only for testing
     words: [String]
     letterStates: [[LetterState]]
+}
+type OpponentGameState {
+    playerID: ID
+    gameRound: GameRound
 }
 type GameStats {
     targetWord: String
@@ -142,11 +145,6 @@ type GameStats {
 type Message {
     userId: ID
     message: String
-}
-
-type OpponentGameState {
-    playerID: ID
-    gameRound: GameRound
 }
 #--------------------------------------------------
 enum UserStatus {

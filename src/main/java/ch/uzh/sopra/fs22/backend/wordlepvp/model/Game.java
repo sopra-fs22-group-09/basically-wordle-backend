@@ -1,5 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
+import java.util.Set;
+
 public interface Game {
 
     //TODO: implements max rounds & maxtime for backend ?
@@ -13,9 +15,11 @@ public interface Game {
     int getRoundTime();
     void setRoundTime(int roundTime);
 
-    Game start(String[] repoWords);
-    GameRound guess(String word);
+    Game start(Set<Player> players, String[] repoWords);
+    Game newGameRound(Player player);
+    Game guess(Player player, String word);
     GameStats concludeGame();
 
-    GameRound getGameRound();
+    GameRound getCurrentGameRound(Player player);
+    GameRound[] getCurrentOpponentGameRounds(Player player);
 }

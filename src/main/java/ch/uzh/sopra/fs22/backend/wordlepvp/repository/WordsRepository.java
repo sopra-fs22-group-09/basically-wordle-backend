@@ -2,7 +2,8 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.*;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -12,17 +13,20 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.Random;
 
 @Component
 public class WordsRepository {
-
     private final RedisTemplate<String, String> redisTemplate;
     private final String allWords = "allWords";
+    private final Random rnd = new SecureRandom();
 
     public WordsRepository(@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection") RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -52,8 +56,8 @@ public class WordsRepository {
         for (int i = 0; i < topics.length; ++i) tmp[i] = getWordsByTopic(topics[i], count);
         String[] words = new String[count];
         for (int i = 0; i < count; ++i) {
-            int y = new Random().nextInt(topics.length);
-            int x = new Random().nextInt(count);
+            int y = rnd.nextInt(topics.length);
+            int x = rnd.nextInt(count);
             if (tmp[y][x] != null) { //Prevent selecting more than once the same word
                 words[i] = tmp[y][x];
                 tmp[y][x] = null;
@@ -67,16 +71,17 @@ public class WordsRepository {
     }
 
     private void cacheWordsFromAPI(String topic) {
+        BufferedReader input = null;
         try {
             URL url = new URL("https://api.datamuse.com/words?sp=?????&max=1000" + (topic.equals(allWords) ? "" : "&topics=" + topic));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.connect();
             if(conn.getResponseCode() == 200) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+                input = new BufferedReader(new InputStreamReader(url.openStream()));
                 HashMap<String, String> tmp = new HashMap<>();
                 String inputLine;
-                while((inputLine = in.readLine()) != null) {
+                while((inputLine = input.readLine()) != null) {
                     for (Object j : (JSONArray) new JSONParser().parse(inputLine)) {
                         String word = ((JSONObject) j).get("word").toString();
                         // Don't establish a connection to redis every time
@@ -86,12 +91,16 @@ public class WordsRepository {
                 }
                 redisTemplate.opsForHash().putAll(topic, tmp);
                 redisTemplate.expire(topic, Duration.ofDays(1));
-
             } else throw new ProtocolException();
-        } catch (ProtocolException | MalformedURLException e) {
+        } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while fetching data from the external API. Please try again in a few minutes.");
-        } catch (IOException | ParseException e) {
+        } catch (ParseException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while processing the fetched data from the external API. Please try again in a few minutes.");
+        }
+        finally {
+            try {
+                if (input != null) input.close();
+            } catch (IOException ignore) {}
         }
     }
 }
