@@ -2,7 +2,8 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.*;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -14,13 +15,18 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.Random;
 
 @Component
 public class WordsRepository {
     private final RedisTemplate<String, String> redisTemplate;
     private final String allWords = "allWords";
+    private final Random rnd = new SecureRandom();
 
     public WordsRepository(@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection") RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -49,7 +55,6 @@ public class WordsRepository {
         String[][] tmp = new String[topics.length][];
         for (int i = 0; i < topics.length; ++i) tmp[i] = getWordsByTopic(topics[i], count);
         String[] words = new String[count];
-        Random rnd = new Random();
         for (int i = 0; i < count; ++i) {
             int y = rnd.nextInt(topics.length);
             int x = rnd.nextInt(count);
