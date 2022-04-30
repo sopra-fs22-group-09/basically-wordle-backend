@@ -1,9 +1,10 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
@@ -11,7 +12,6 @@ import java.util.*;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class SonicFast implements Game, Serializable {
 
     private String id;
@@ -26,7 +26,6 @@ public class SonicFast implements Game, Serializable {
 
     private Map<Player, GameStats> gameStats;
     private Map<Player, Integer[]> guesses; //(add mapping to gameround) getCurrentGameround()
-
     private Map<Player, Boolean[]> guessed; //add mapping to player
 
     public Game start(Set<Player> players, String[] repoWords) {
@@ -43,11 +42,13 @@ public class SonicFast implements Game, Serializable {
 
         for (Player player : players) {
             GameRound[] gameRounds = new GameRound[amountRounds];
-            for (int i = 0; i < this.amountRounds; i++) {
-                gameRounds[i] = new GameRound(player, i, this.targetWords[i]);
-            }
             Integer[] guesses = new Integer[amountRounds];
             Boolean[] guessed = new Boolean[amountRounds];
+            for (int i = 0; i < this.amountRounds; i++) {
+                gameRounds[i] = new GameRound(player, i, this.targetWords[i]);
+                guesses[i] = 0;
+                guessed[i] = false;
+            }
             this.guesses.put(player, guesses);
             this.guessed.put(player, guessed);
             this.game.put(player, gameRounds);
@@ -57,12 +58,15 @@ public class SonicFast implements Game, Serializable {
     }
 
     public Game guess(Player player, String guess) {
-        if (Objects.equals(guess, this.targetWords[this.currentGameRound.get(player).getCurrentRound()])) {
-        //    this.currentGameRound.get(player).setFinish(System.nanoTime());
+/*        if (Objects.equals(guess, this.targetWords[this.currentGameRound.get(player).getCurrentRound()])) {
+            this.currentGameRound.get(player).setFinish(System.nanoTime());
+        }*/
+        if (this.currentGameRound.get(player).getFinish() != 0) {
+            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "The GameRound has already finished.");
         }
 
         if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] || guess.length() != 5) {
-            return null;
+            return this;
         }
         String[] previousGuesses = this.currentGameRound.get(player).getWords();
         if (this.guesses.get(player)[this.currentGameRound.get(player).getCurrentRound()] == 0) {
@@ -131,6 +135,9 @@ public class SonicFast implements Game, Serializable {
     public Game newGameRound(Player player) {
         if (this.currentGameRound.get(player).getFinish() != 0) {
             int nextRound = this.currentGameRound.get(player).getCurrentRound() + 1;
+            if (nextRound >= amountRounds) {
+                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "The Game has already finished.");
+            }
             this.currentGameRound.put(player, this.game.get(player)[nextRound]);
         }
         return this;
