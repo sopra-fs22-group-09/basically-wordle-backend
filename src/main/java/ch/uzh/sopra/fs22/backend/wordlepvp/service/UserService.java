@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -103,7 +105,10 @@ public class UserService {
         String url = Objects.equals(activeProfile, "prod") ? "https://oxv.io" : "http://localhost:3000";
 
         if (userByEmail != null) {
-            String resetToken = RandomStringUtils.random(48,true,true); // TODO Maybe random UUID?
+            SecureRandom random = new SecureRandom();
+            byte[] bytes = new byte[32];
+            random.nextBytes(bytes);
+            String resetToken = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes); // TODO Maybe random UUID?
             userByEmail.setResetToken(resetToken);
             emailService.sendSimpleMessage(userByEmail.getEmail(), "Password Reset",
                     String.format("Hi %s,\r\nPlease go to %s/reset/tokenEntry and enter the following code to reset your password:\r\n%s",

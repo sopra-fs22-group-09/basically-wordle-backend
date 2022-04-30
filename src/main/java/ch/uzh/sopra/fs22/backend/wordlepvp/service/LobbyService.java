@@ -70,7 +70,7 @@ public class LobbyService {
 
     public Mono<Lobby> changeLobby(GameSettingsInput input, Mono<Player> player) {
 
-        return player.map(Player::getLobbyId)
+        return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .zipWith(player, (l, p) -> {
                     if (!Objects.equals(l.getOwner().getId(), p.getId())) {
