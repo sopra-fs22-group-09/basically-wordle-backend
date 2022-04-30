@@ -37,7 +37,7 @@ public class Chain implements Game, Serializable {
         return null;
     }
 
-    public GameStats concludeGame() {
+    public GameStats concludeGame(Player player) {
         return null;
     }
 

@@ -18,7 +18,7 @@ public interface Game {
     Game start(Set<Player> players, String[] repoWords);
     Game newGameRound(Player player);
     Game guess(Player player, String word);
-    GameStats concludeGame();
+    GameStats concludeGame(Player player);
 
     GameRound getCurrentGameRound(Player player);
     GameRound[] getCurrentOpponentGameRounds(Player player);

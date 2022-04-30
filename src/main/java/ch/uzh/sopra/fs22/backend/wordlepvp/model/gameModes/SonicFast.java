@@ -52,6 +52,7 @@ public class SonicFast implements Game, Serializable {
             this.guessed.put(player, guessed);
             this.game.put(player, gameRounds);
             this.currentGameRound.put(player, this.game.get(player)[0]);
+            this.currentGameRound.get(player).setStart(System.nanoTime());
         }
         return this;
     }
@@ -60,6 +61,8 @@ public class SonicFast implements Game, Serializable {
         if (Objects.equals(guess, this.targetWords[this.currentGameRound.get(player).getCurrentRound()])) {
         //    this.currentGameRound.get(player).setFinish(System.nanoTime());
         }
+
+
 
         if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] || guess.length() != 5) {
             return null;
@@ -100,15 +103,8 @@ public class SonicFast implements Game, Serializable {
             Boolean[] updatedGuessed = this.guessed.get(player);
             updatedGuessed[this.currentGameRound.get(player).getCurrentRound()] = true;
             this.guessed.put(player, updatedGuessed);
-            this.endGame(player);
+          //  this.endGame(player);
         }
-        /*for (int i=0; i < letterState[guesses].length; i++) {
-            if (letterState[guesses][i] != LetterState.CORRECTPOSITION) {
-                break;
-            }
-            this.guessed = true;
-            this.endGame();
-        }*/
 
         this.currentGameRound.get(player).setLetterStates(letterState);
         Integer[] updatedGuesses = this.guesses.get(player);
@@ -117,11 +113,55 @@ public class SonicFast implements Game, Serializable {
         if (this.guesses.get(player)[this.currentGameRound.get(player).getCurrentRound()] >= 6 && !this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()]) {
             this.endGame(player);
         }
+        if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] && this.currentGameRound.get(player).getCurrentRound() <= (amountRounds - 2)) {
+           // this.newGameRound(player);
+            this.endGame(player);
+        }
+        if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] && this.currentGameRound.get(player).getCurrentRound() > (amountRounds - 2)) {
+            this.endGame(player);
+        }
         return this;
     }
 
-    public GameStats concludeGame() {
-        return null;
+    public GameStats concludeGame(Player player) {
+        if (this.currentGameRound.get(player).getFinish() == 0L) {
+            return null;
+        }
+        LetterState[][] letterState = this.currentGameRound.get(player).getLetterStates();
+        int numberWon = 0;
+        int roundsTaken = 0;
+        for (int i = 0; i < this.guesses.get(player).length; i++) {
+            roundsTaken += this.guesses.get(player)[i];
+        }
+        long elapsedTime = (this.currentGameRound.get(player).getFinish() - this.game.get(player)[0].getStart()) / 1000000000;
+        long hours = elapsedTime / 3600;
+        long minutes = (elapsedTime % 3600) / 60;
+        long seconds = elapsedTime % 60;
+        String timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+
+        this.gameStats.get(player).setTimeTaken(timeString);
+        this.gameStats.get(player).setRoundsTaken(roundsTaken);
+        if (this.amountRounds == 1) {
+            this.gameStats.get(player).setTargetWord(this.currentGameRound.get(player).getTargetWord());
+        }
+
+        for (int i=0; i < this.guessed.get(player).length; i++) {
+            boolean isGuessed = this.guessed.get(player)[i];
+            if (isGuessed) {
+                numberWon += 1;
+            }
+        }
+        if (numberWon >= 1) {
+            this.gameStats.get(player).setRank(numberWon);
+            this.gameStats.get(player).setScore((amountRounds * 100) / (roundsTaken / amountRounds));
+        }
+        else {
+            this.gameStats.get(player).setRank(0);
+            this.gameStats.get(player).setScore(0);
+        }
+        return this.gameStats.get(player);
+        //conclude stats and show them to the player
+        // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score
     }
 
     public void endGame(Player player) {
@@ -129,7 +169,7 @@ public class SonicFast implements Game, Serializable {
     }
 
     public Game newGameRound(Player player) {
-        if (this.currentGameRound.get(player).getFinish() != 0) {
+        if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()]) {
             int nextRound = this.currentGameRound.get(player).getCurrentRound() + 1;
             this.currentGameRound.put(player, this.game.get(player)[nextRound]);
         }

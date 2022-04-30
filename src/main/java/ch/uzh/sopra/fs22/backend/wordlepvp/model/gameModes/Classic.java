@@ -99,7 +99,7 @@ public class Classic implements Game, Serializable {
     }
 
     // player wins the game
-    public GameStats concludeGame() {
+    public GameStats concludeGame(Player player) {
         if (gameRound.getFinish() == 0L) {
             return null;
         }
