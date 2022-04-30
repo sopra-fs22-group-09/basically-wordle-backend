@@ -28,7 +28,8 @@ public class Classic implements Game, Serializable {
 
     public Game start(Set<Player> players, String[] repoWords) {
         if (players.stream().findFirst().isPresent()) {
-            this.gameRound = new GameRound(players.stream().findFirst().get(), 0, repoWords[this.r.nextInt(repoWords.length)]);
+            Player player = players.stream().findFirst().get();
+            this.gameRound = new GameRound(player, 0, repoWords[this.r.nextInt(repoWords.length)]);
         }
         this.gameStats = new GameStats();
         gameRound.setStart(System.nanoTime());
