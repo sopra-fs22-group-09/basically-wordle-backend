@@ -61,7 +61,7 @@ public class GameService {
 
         return player.map(Player::getLobbyId)
                 .flatMap(this.gameRepository::getGame)
-                .map(Game::concludeGame)
+                .zipWith(player, Game::concludeGame)
                 .log();
 
     }
