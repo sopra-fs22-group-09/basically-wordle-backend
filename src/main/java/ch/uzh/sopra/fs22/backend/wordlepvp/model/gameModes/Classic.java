@@ -135,11 +135,11 @@ public class Classic implements Game, Serializable {
         // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score
     }
 
-    public Game newGameRound(Player player) {
-        return this;
+    public GameRound getCurrentGameRound(Player player) {
+        return null;
     }
 
-    public GameRound getCurrentGameRound(Player player) {
+    public GameStatus getCurrentGameStatus(Player player) {
         return null;
     }
 

@@ -42,7 +42,7 @@ public class GameRepository {
 
     }
 
-    public Flux<Game> getGameRoundsStream(String id) {
+    public Flux<Game> getGameStream(String id) {
         return this.reactiveRedisTemplate.listenToChannel("game/" + id)
                 .map(ReactiveSubscription.Message::getMessage)
                 .publishOn(Schedulers.boundedElastic())

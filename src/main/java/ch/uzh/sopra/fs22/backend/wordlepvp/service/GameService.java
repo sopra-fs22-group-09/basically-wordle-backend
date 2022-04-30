@@ -35,17 +35,6 @@ public class GameService {
 
     }
 
-    public Mono<GameRound> initializeNextGameRound(Mono<Player> player) {
-
-        return player.map(Player::getLobbyId)
-                .flatMap(this.gameRepository::getGame)
-                .zipWith(player, Game::newGameRound)
-                .flatMap(this.gameRepository::saveGame)
-                .zipWith(player, Game::getCurrentGameRound)
-                .log();
-
-    }
-
     public Mono<GameRound> submitWord(String word, Mono<Player> player) {
 
         return player.map(Player::getLobbyId)
@@ -66,10 +55,19 @@ public class GameService {
 
     }
 
+    public Flux<GameStatus> getGameStatus(Mono<Player> player) {
+
+        return player.map(Player::getLobbyId)
+                .flatMapMany(this.gameRepository::getGameStream)
+                .zipWith(player, Game::getCurrentGameStatus)
+                .log();
+
+    }
+
     public Flux<GameRound[]> getOpponentGameRounds(Mono<Player> player) {
 
         return player.map(Player::getLobbyId)
-                .flatMapMany(this.gameRepository::getGameRoundsStream)
+                .flatMapMany(this.gameRepository::getGameStream)
                 .zipWith(player, Game::getCurrentOpponentGameRounds)
                 .log();
 

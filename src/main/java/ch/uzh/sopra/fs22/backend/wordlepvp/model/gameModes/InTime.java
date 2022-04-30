@@ -1,9 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStats;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -41,11 +38,11 @@ public class InTime implements Game, Serializable {
         return null;
     }
 
-    public Game newGameRound(Player player) {
+    public GameRound getCurrentGameRound(Player player) {
         return null;
     }
 
-    public GameRound getCurrentGameRound(Player player) {
+    public GameStatus getCurrentGameStatus(Player player) {
         return null;
     }
 
