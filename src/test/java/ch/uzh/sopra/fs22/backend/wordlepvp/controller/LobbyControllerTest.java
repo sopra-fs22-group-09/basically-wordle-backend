@@ -2,33 +2,34 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameCategory;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.service.LobbyService;
+import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
-import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.graphql.test.tester.GraphQlTester;
 import org.springframework.test.context.ActiveProfiles;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
+import reactor.util.context.Context;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @GraphQlTest(LobbyController.class)
+//@ContextConfiguration()
 @ActiveProfiles("test")
 @Import({LobbyRepository.class})
 //@AutoConfigureTestEntityManager
@@ -44,7 +45,13 @@ public class LobbyControllerTest {
 //    private RedisConnectionFactory redisConnectionFactory;
 
     @MockBean
+    private LobbyService lobbyService;
+
+    @MockBean
     private LobbyRepository lobbyRepository;
+
+    @MockBean
+    private PlayerService playerService;
 
 //    @InjectMocks
     @MockBean
@@ -52,6 +59,13 @@ public class LobbyControllerTest {
 
     @MockBean
     private UserRepository userRepository;
+
+    @SpyBean
+    private LobbyController injectedLobbyController;
+
+    String authHeader() {
+        return "Bearer Toast";
+    }
 
 //    @Test
 //    void createLobby() {
@@ -76,18 +90,13 @@ public class LobbyControllerTest {
         Flux<Lobby> result = this.graphQlTester.documentName("lobby")
                 .executeSubscription()
                 .toFlux("lobby", Lobby.class)
-                // FIXME: Jesus Christ! Why does Authorization appear as a new KV pair inside the top-level map? D:
-//                .contextWrite(Context.of("Authorization", "Bearer Toast"))
-                .contextWrite(context -> context.put("Authorization", "Bearer Toast"));
+                .contextWrite(Context.of("Authorization", "Bearer Toast"));
+//                .contextWrite(context -> context.put("Authorization", "Bearer Toast"));
 
-        User expectedPlayer = User.builder()
-                .id(UUID.fromString("caffbeef-dead-beef-caff-deadbeefcaff"))
-                .username("Jeff")
+        Player expectedPlayer = Player.builder()
+                .id("caffbeef-dead-beef-caff-deadbeefcaff")
+                .name("Jeff")
                 .build();
-
-        given(AuthorizationHelper.extractAuthToken(Mockito.anyString())).willReturn("deadbeee-dead-beef-caff-deadbeefcaff");
-//        given(userService.getFromToken("deadbeee-dead-beef-caff-deadbeefcaff")).willReturn(expectedPlayer);
-        when(lobbyRepository.getLobbyStream(Mockito.anyString(), Mockito.any())).thenReturn(Flux.empty());
 
         Lobby expected = Lobby.builder()
                 .id("deadbeef-dead-beef-caff-deadbeefcaff")
@@ -100,6 +109,11 @@ public class LobbyControllerTest {
                         )
                 ))
                 .build();
+
+//        given(AuthorizationHelper.extractAuthToken(authHeader())).willReturn("deadbeee-dead-beef-caff-deadbeefcaff");
+//        given(userService.getFromToken("deadbeee-dead-beef-caff-deadbeefcaff")).willReturn(expectedPlayer);
+//        doReturn(authHeader()).when(injectedLobbyController).lobby(anyString());
+        when(lobbyRepository.getLobbyStream(expected.getId())).thenReturn(Flux.just(expected));
 
         StepVerifier.create(result)
                 .expectNext(expected)

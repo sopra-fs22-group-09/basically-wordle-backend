@@ -1,12 +1,12 @@
 subscription {
-    lobby(id: "deadbeef-dead-beef-caff-deadbeefcaff") {
+    lobby {
         id
         size
         name
         gameCategory
         players {
             id
-            username
+            name
         }
     }
 }
