@@ -39,6 +39,8 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+#  main:
+#    allow-bean-definition-overriding: true
   #datasource:
     #url: jdbc:tc:postgresql:13-alpine:////spring-integration-tests
     #driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
@@ -87,7 +89,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: '*'
 
 logging:
   level:

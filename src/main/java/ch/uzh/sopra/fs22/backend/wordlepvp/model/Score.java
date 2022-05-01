@@ -5,6 +5,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -18,7 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class Score {
+@EntityListeners(AuditingEntityListener.class)
+public class Score extends BaseEntity {
 
     @Id
     @GenericGenerator(name = "uuid2", strategy = "uuid2")
@@ -31,12 +33,6 @@ public class Score {
 
     @NonNull
     private Integer score;
-
-    @CreatedDate
-    private LocalDateTime createdDate;
-
-    @LastModifiedDate
-    private LocalDateTime lastUpdatedDate;
 
     @Override
     public boolean equals(Object o) {
