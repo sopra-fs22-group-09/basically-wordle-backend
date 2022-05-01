@@ -1,0 +1,417 @@
+_type: export
+__export_format: 4
+__export_date: 2022-04-27T22:35:39.416Z
+__export_source: insomnia.desktop.app:v2022.2.1
+resources:
+  - _id: req_da76a6204f8a4ebc87f9a277fe36689b
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651098470515
+    created: 1650906070844
+    url: "{{ _.base_url }}/graphql"
+    name: Create Lobby
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: "{\"query\":\"mutation createLobby($input: LobbyInput!)
+        {\\n\\tcreateLobby(input: $input)
+        {\\n\\t\\tid\\n\\t\\tname\\n\\t\\tsize\\n\\t\\towner
+        {\\n\\t\\t\\tname\\n\\t\\t}\\n\\t\\tstatus\\n\\t\\tgameCategory\\n\\t\\\
+        tgameMode\\n\\t\\tgame
+        {\\n\\t\\t\\tamountRounds\\n\\t\\t\\troundTime\\n\\t\\t}\\n\\t}\\n}\",\
+        \"variables\":{\"input\":{\"gameCategory\":\"PVP\",\"name\":\"Test1's
+        Game\",\"size\":2}},\"operationName\":\"createLobby\"}"
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_12f7933363e54277bf48e1fc990808c2
+    authentication:
+      type: bearer
+      token: "{% response 'header', 'req_fe38e2ade58d4ad88081047cc463a888',
+        'b64::QXV0aG9yaXphdGlvbg==::46b', 'when-expired', 28800 %}"
+    metaSortKey: -1649877205339.75
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: fld_4564e55d565b44ada809aaa6d74de03c
+    parentId: wrk_9cd902e5e0e6413d9d7c1f95aa4878cc
+    modified: 1650906070843
+    created: 1650906070843
+    name: Spring GQL
+    description: ""
+    environment: {}
+    environmentPropertyOrder: {}
+    metaSortKey: -1647715184448
+    _type: request_group
+  - _id: wrk_9cd902e5e0e6413d9d7c1f95aa4878cc
+    parentId: null
+    modified: 1650906070797
+    created: 1650906070797
+    name: Backend
+    description: ""
+    scope: collection
+    _type: workspace
+  - _id: req_590281a0e2b24f1d87920f9a5ee47cd0
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651095551591
+    created: 1650906070849
+    url: "{{ _.base_url }}/graphql"
+    name: Get Lobby by Id
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"query {\n\tlobbyById(id: 13) {\n\t\tid\n\t\tname\n\t}\n}\n"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_12f7933363e54277bf48e1fc990808c2
+      - id: pair_fbedafa200e843449df1419e8885d999
+        name: ""
+        value: ""
+        description: ""
+    authentication:
+      type: bearer
+      disabled: false
+      token: "{% response 'header', 'req_fe38e2ade58d4ad88081047cc463a888',
+        'b64::QXV0aG9yaXphdGlvbg==::46b', 'when-expired', 28800 %}"
+    metaSortKey: -1647374365625.25
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_e1b2efef07b543f59df218e5c29ad540
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651095547439
+    created: 1650906070857
+    url: "{{ _.base_url }}/graphql"
+    name: Register
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"mutation signUp($user: RegisterInput!) {\n\tregister(input:
+        $user)
+        {\n\t\tid\n\t\tusername\n\t\temail\n\t\t#verified\n\t}\n}","variables":{"user":{"username":"peter","email":"testis2@test.io","password":"TestIS1?"}},"operationName":"signUp"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_12f7933363e54277bf48e1fc990808c2
+    authentication: {}
+    metaSortKey: -1647544779632.625
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_8ccf045d338d4401944e2769a4be6f75
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651092748198
+    created: 1650906070861
+    url: "{{ _.base_url }}/graphql"
+    name: Introspection
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"query IntrospectionQuery {\n\t__schema {\n\n\t\tqueryType {
+        name }\n\t\tmutationType { name }\n\t\tsubscriptionType { name
+        }\n\t\ttypes {\n\t\t\t...FullType\n\t\t}\n\t\tdirectives
+        {\n\t\t\tname\n\t\t\tdescription\n\n\t\t\tlocations\n\t\t\targs
+        {\n\t\t\t\t...InputValue\n\t\t\t}\n\t\t}\n\t}\n}\n\nfragment FullType on
+        __Type {\n\tkind\n\tname\n\tdescription\n\tfields(includeDeprecated:
+        true) {\n\t\tname\n\t\tdescription\n\t\targs
+        {\n\t\t\t...InputValue\n\t\t}\n\t\ttype
+        {\n\t\t\t...TypeRef\n\t\t}\n\t\tisDeprecated\n\t\tdeprecationReason\n\t}\n\tinputFields
+        {\n\t\t...InputValue\n\t}\n\tinterfaces
+        {\n\t\t...TypeRef\n\t}\n\tenumValues(includeDeprecated: true)
+        {\n\t\tname\n\t\tdescription\n\t\tisDeprecated\n\t\tdeprecationReason\n\t}\n\tpossibleTypes
+        {\n\t\t...TypeRef\n\t}\n}\n\nfragment InputValue on __InputValue
+        {\n\tname\n\tdescription\n\ttype { ...TypeRef
+        }\n\tdefaultValue\n}\n\nfragment TypeRef on __Type
+        {\n\tkind\n\tname\n\tofType {\n\t\tkind\n\t\tname\n\t\tofType
+        {\n\t\t\tkind\n\t\t\tname\n\t\t\tofType
+        {\n\t\t\t\tkind\n\t\t\t\tname\n\t\t\t\tofType
+        {\n\t\t\t\t\tkind\n\t\t\t\t\tname\n\t\t\t\t\tofType
+        {\n\t\t\t\t\t\tkind\n\t\t\t\t\t\tname\n\t\t\t\t\t\tofType
+        {\n\t\t\t\t\t\t\tkind\n\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\tofType
+        {\n\t\t\t\t\t\t\t\tkind\n\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}\n","operationName":"IntrospectionQuery"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_4ede56219e2a4eea97dc62be2d944e69
+    authentication: {}
+    metaSortKey: -1647033537560.5
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_0833a1efd92e4ad29dbe4105b6561aba
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651098131161
+    created: 1650906070867
+    url: "{{ _.base_url }}/graphql"
+    name: Logout
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"mutation {\n\tlogout\n}"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_12f7933363e54277bf48e1fc990808c2
+    authentication:
+      type: bearer
+      token: "{% response 'header', 'req_fe38e2ade58d4ad88081047cc463a888',
+        'b64::QXV0aG9yaXphdGlvbg==::46b', 'when-expired', 28800 %}"
+    metaSortKey: -1647629986636.3125
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_76a8285219af4a6c851fb92d5d4bbde2
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651098514349
+    created: 1650906070876
+    url: "{{ _.base_url }}/graphql"
+    name: Join Lobby
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"  mutation joinLobby($id: ID!) {\n    joinLobbyById(id: $id)
+        {\n      id\n      size\n      name\n      gameCategory\n\t\t\tgameMode\n\t\t\tgame
+        {\n\t\t\t\tamountRounds\n\t\t\t\troundTime\n\t\t\t}\n\t\t\tplayers
+        {\n\t\t\t\tname\n\t\t\t}\n    }\n  }","variables":{"id":"cc180124-7bc1-4c3b-81fc-957f4a8b8c03"},"operationName":"joinLobby"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_2e86032e3f8c49e596f500dd318bf98d
+    authentication:
+      type: bearer
+      token: "{% response 'header', 'req_fe38e2ade58d4ad88081047cc463a888',
+        'b64::QXV0aG9yaXphdGlvbg==::46b', 'when-expired', 28800 %}"
+    metaSortKey: -1649927009866
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_d9d2204543c140f08bbeb80841ce75b4
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651095636125
+    created: 1650906070878
+    url: "{{ _.base_url }}/graphql"
+    name: Get Lobbies
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"query {\n\tgetLobbies {\n\t\tid\n\t\tname\n\t\tsize\n\t\towner
+        {\n\t\t\tid\n\t\t\tname\n\t\t}\n\t\tstatus\n\t\tgameCategory\n\t\tgameMode\n\t\tgame
+        {\n\t\t\tamountRounds\n\t\t\troundTime\n\t\t}\n\t\tplayers
+        {\n\t\t\tid\n\t\t\tname\n\t\t}\n\t}\n}\n"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_5f2cf5f344cd419ea51681301a30bf40
+    authentication:
+      type: bearer
+      token: "{% response 'header', 'req_fe38e2ade58d4ad88081047cc463a888',
+        'b64::QXV0aG9yaXphdGlvbg==::46b', 'when-expired', 28800 %}"
+    metaSortKey: -1650288647553
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_dd733908eaf0467a8b1e71cf186089fc
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651098929161
+    created: 1650906070881
+    url: "{{ _.base_url }}/graphql"
+    name: Change Lobby
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"mutation updateLobby($gameSettings: GameSettingsInput!)
+        {\n\tupdateLobbySettings(input: $gameSettings)
+        {\n\t\tid\n\t\tgameMode\n\t\tgame
+        {\n\t\t\tamountRounds\n\t\t\troundTime\n\t\t}\n\t}\n}","variables":{"gameSettings":{"gameMode":"WORDSPP","amountRounds":5,"roundTime":50}},"operationName":"updateLobby"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_12f7933363e54277bf48e1fc990808c2
+    authentication:
+      type: bearer
+      token: "{% response 'header', 'req_fe38e2ade58d4ad88081047cc463a888',
+        'b64::QXV0aG9yaXphdGlvbg==::46b', 'when-expired', 28800 %}"
+    metaSortKey: -1649868904585.375
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_fe38e2ade58d4ad88081047cc463a888
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651098133259
+    created: 1650906070884
+    url: "{{ _.base_url }}/graphql"
+    name: Login
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"  mutation signIn($input: LoginInput!) {\n    login(input:
+        $input)
+        {\n      id\n      username\n      email\n      #verified\n    }\n  }","variables":{"input":{"username":"peter","password":"TestIS1?"}},"operationName":"signIn"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_12f7933363e54277bf48e1fc990808c2
+    authentication: {}
+    metaSortKey: -1647289158596.5625
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_352c629b382c44d9bc3a0ce5bd4dc515
+    parentId: fld_4564e55d565b44ada809aaa6d74de03c
+    modified: 1651095635590
+    created: 1650906070889
+    url: "{{ _.base_url }}/graphql"
+    name: Start Game
+    description: ""
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"  mutation startGame {\n    startGame
+        {\n\t\t\tamountRounds\n\t\t\troundTime\n    }\n  }","operationName":"startGame"}'
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_43c7949e5afd4b65a2a0e333d89e26b7
+    authentication:
+      type: bearer
+      token: "{% response 'header', 'req_fe38e2ade58d4ad88081047cc463a888',
+        'b64::QXV0aG9yaXphdGlvbg==::46b', 'when-expired', 28800 %}"
+    metaSortKey: -1650824987719
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: env_f7f22ebfb0014238afabd33a8e17861e
+    parentId: wrk_9cd902e5e0e6413d9d7c1f95aa4878cc
+    modified: 1650906070798
+    created: 1650906070798
+    name: Base Environment
+    data: {}
+    dataPropertyOrder: {}
+    color: null
+    isPrivate: false
+    metaSortKey: 1612179686423
+    _type: environment
+  - _id: jar_9c17d644b01141bebb6a91ff2deaa22f
+    parentId: wrk_9cd902e5e0e6413d9d7c1f95aa4878cc
+    modified: 1650906070809
+    created: 1650906070809
+    name: Default Jar
+    cookies: []
+    _type: cookie_jar
+  - _id: spc_2e87cf17def045358d627f735f3560e7
+    parentId: wrk_9cd902e5e0e6413d9d7c1f95aa4878cc
+    modified: 1650906070906
+    created: 1650906070810
+    fileName: Backend
+    contents: ""
+    contentType: yaml
+    _type: api_spec
+  - _id: env_566910211a2b4c2fafc42e28abcf1c07
+    parentId: env_f7f22ebfb0014238afabd33a8e17861e
+    modified: 1650907591425
+    created: 1650906070800
+    name: Prod
+    data:
+      base_url: "{{ _.scheme }}://{{ _.host }}{{ _.base_path }}"
+      scheme: https
+      base_path: ""
+      host: wordlepvp-backend.oxv.io
+    dataPropertyOrder:
+      "&":
+        - base_url
+        - scheme
+        - base_path
+        - host
+    color: "#ff0000"
+    isPrivate: false
+    metaSortKey: 1650373279544
+    _type: environment
+  - _id: env_f2db9d36924a4fc4b723fe068fb48608
+    parentId: env_f7f22ebfb0014238afabd33a8e17861e
+    modified: 1650906070804
+    created: 1650906070804
+    name: Local
+    data:
+      base_url: "{{ _.scheme }}://{{ _.host }}{{ _.base_path }}"
+      scheme: http
+      base_path: ""
+      host: localhost:8080
+    dataPropertyOrder:
+      "&":
+        - base_url
+        - scheme
+        - base_path
+        - host
+    color: "#2bff00"
+    isPrivate: false
+    metaSortKey: 1650373279594
+    _type: environment
