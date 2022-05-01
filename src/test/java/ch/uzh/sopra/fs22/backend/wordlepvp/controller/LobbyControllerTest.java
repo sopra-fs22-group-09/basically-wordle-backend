@@ -1,36 +1,24 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameCategory;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.LobbyService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
 import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.graphql.execution.ErrorType;
 import org.springframework.graphql.test.tester.GraphQlTester;
 import org.springframework.test.context.ActiveProfiles;
-import reactor.core.publisher.Flux;
-import reactor.test.StepVerifier;
-import reactor.util.context.Context;
-
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @GraphQlTest(LobbyController.class)
 //@ContextConfiguration()
 @ActiveProfiles("test")
+@DataRedisTest
 @Import({LobbyRepository.class})
 //@AutoConfigureTestEntityManager
 public class LobbyControllerTest {
