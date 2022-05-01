@@ -100,6 +100,7 @@ public class GameService {
                     if (t.getT1().getOwner().getId().equals(t.getT2().getId())
                             && t.getT1().getGame().getStatus() == GameStatus.NEW) {
                         t.getT1().getGame().setStatus(GameStatus.PREPARING);
+                        t.getT1().getPlayers().forEach(p -> t.getT1().getGame().setPlayerStatus(p, PlayerStatus.SYNCING));
                         return t;
                     }
                     return t.getT1().getGame().getStatus() == GameStatus.PREPARING ? t : null;
