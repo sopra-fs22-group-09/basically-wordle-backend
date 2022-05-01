@@ -3,10 +3,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
-import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
-import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
-import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetInput;
-import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetTokenInput;
+import ch.uzh.sopra.fs22.backend.wordlepvp.validator.*;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.ContextValue;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -47,4 +44,8 @@ public class UserController {
     public void resetWithToken(@Argument @Valid ResetTokenInput input) { // TODO why does a mutation return void?
         this.userService.resetWithToken(input);
     }
+
+    @MutationMapping
+    public boolean tutorialFinished(@ContextValue(name = "Authorization") String authHeader) {
+        return this.userService.completeTutorial(AuthorizationHelper.extractAuthToken(authHeader));}
 }

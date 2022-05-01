@@ -14,6 +14,7 @@ type Mutation {
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
     #updateUserProfile(input: UserSettingsInput!): User
+    tutorialFinished: Boolean!
 
     createLobby(input: LobbyInput!): Lobby
     joinLobbyById(id: ID!): Lobby

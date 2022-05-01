@@ -145,6 +145,12 @@ public class UserService {
         return user.get();
     }
 
+    public boolean completeTutorial(String token) {
+        User user = getFromToken(token);
+        user.setTutorialCompleted(true);
+        return true;
+    }
+
 //    public Mono<User> getFromToken(String token) {
 //        Mono<User> user;
 //        try {
