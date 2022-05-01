@@ -64,6 +64,15 @@ public class GameService {
 
     }
 
+    public Flux<PlayerStatus> getPlayerStatus(Mono<Player> player) {
+
+        return player.map(Player::getLobbyId)
+                .flatMapMany(this.gameRepository::getGameStream)
+                .zipWith(player, Game::getPlayerStatus)
+                .log();
+
+    }
+
     public Flux<GameStatus> getGameStatus(Mono<Player> player) {
 
         return player.map(Player::getLobbyId)
@@ -95,20 +104,16 @@ public class GameService {
                     }
                     return t.getT1().getGame().getStatus() == GameStatus.PREPARING ? t : null;
                 })
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "There is currently no sync in progress for this lobby.")))
-                .doOnNext(t -> t.getT2().setSynced(true))
+/*                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "There is currently no sync in progress for this lobby.")))*/
+                .doOnNext(t -> t.getT1().getGame().setPlayerStatus(t.getT2(), PlayerStatus.GUESSING))
                 .log()
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "You are not currently in a lobby.")))
-                .map(lp -> {
-                    lp.getT1().getPlayers().add(lp.getT2());
-                    return lp.getT1();
-                })
-                .flatMap(this.lobbyRepository::saveLobby)
+/*                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "You are not currently in a lobby.")))*/
+                .flatMap(lp -> this.lobbyRepository.saveLobby(lp.getT1()))
                 .log()
-                .mapNotNull(t -> t.getPlayers().stream().allMatch(Player::isSynced) ? t : null)
-                .doOnNext(t -> t.getGame().setStatus(GameStatus.GUESSING))
+                .mapNotNull(l -> l.getGame().playersSynced() ? l : null)
+                .doOnNext(t -> t.getGame().setStatus(GameStatus.PLAYING))
                 .flatMap(t -> initializeGame(player))
                 .map(g -> this.reactiveRedisTemplate
                         .convertAndSend("gamesync/" + g.getId(), g.getStatus()))

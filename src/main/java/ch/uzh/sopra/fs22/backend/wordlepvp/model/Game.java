@@ -19,8 +19,12 @@ public interface Game {
     Game guess(Player player, String word);
     GameStats concludeGame(Player player);
 
-    GameRound getCurrentGameRound(Player player);
     GameStatus getStatus();
     void setStatus(GameStatus status);
+    PlayerStatus getPlayerStatus(Player player);
+    void setPlayerStatus(Player player, PlayerStatus playerStatus);
+    boolean playersSynced();
+
+    GameRound getCurrentGameRound(Player player);
     GameRound[] getCurrentOpponentGameRounds(Player player);
 }

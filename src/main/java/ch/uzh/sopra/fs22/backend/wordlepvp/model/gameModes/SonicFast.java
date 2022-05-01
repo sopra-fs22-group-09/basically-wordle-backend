@@ -2,16 +2,12 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.*;
 
 @Data
-@NoArgsConstructor
 public class SonicFast implements Game, Serializable {
 
     private String id;
@@ -28,6 +24,8 @@ public class SonicFast implements Game, Serializable {
     private Map<Player, GameStats> gameStats;
     private Map<Player, Integer[]> guesses; //(add mapping to gameround) getCurrentGameround()
     private Map<Player, Boolean[]> guessed; //add mapping to player
+
+    private Map<Player, PlayerStatus> playerStatus = new HashMap<>();
 
     public Game start(Set<Player> players, String[] repoWords) {
         this.repoWords = repoWords;
@@ -111,13 +109,13 @@ public class SonicFast implements Game, Serializable {
         updatedGuesses[this.currentGameRound.get(player).getCurrentRound()] = updatedGuesses[this.currentGameRound.get(player).getCurrentRound()] + 1;
         this.guesses.put(player, updatedGuesses);
         if (this.guesses.get(player)[this.currentGameRound.get(player).getCurrentRound()] >= 6) {
-            this.endGame(player);
+            this.endRound(player);
         }
         if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] && this.currentGameRound.get(player).getCurrentRound() <= (amountRounds - 2)) {
-            this.endGame(player);
+            this.endRound(player);
         }
         if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] && this.currentGameRound.get(player).getCurrentRound() > (amountRounds - 2)) {
-            this.endGame(player);
+            this.endRound(player);
         }
         return this;
     }
@@ -163,21 +161,26 @@ public class SonicFast implements Game, Serializable {
         // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score
     }
 
-    public void endGame(Player player) {
+    public void endRound(Player player) {
         this.currentGameRound.get(player).setFinish(System.nanoTime());
 
         int currentRound = this.currentGameRound.get(player).getCurrentRound();
+
         boolean allDone = true;
         for (Map.Entry<Player, Integer[]> entry : this.guesses.entrySet()) {
             if (!this.guessed.get(entry.getKey())[currentRound] && entry.getValue()[currentRound] < 6) {
                 allDone = false;
+                this.playerStatus.put(entry.getKey(), PlayerStatus.WAITING);
                 break;
             }
         }
         if (allDone) {
             int nextRound = this.currentGameRound.get(player).getCurrentRound() + 1;
             if (nextRound < amountRounds) {
+                this.playerStatus.replaceAll((k, v) -> PlayerStatus.GUESSING);
                 this.currentGameRound.replaceAll((k, v) -> this.game.get(k)[nextRound]);
+            } else {
+                this.setStatus(GameStatus.FINISHED);
             }
         }
     }
@@ -186,19 +189,19 @@ public class SonicFast implements Game, Serializable {
         return this.currentGameRound.get(player);
     }
 
-    public GameStatus getCurrentGameStatus(Player player) {
-        int currentRound = this.currentGameRound.get(player).getCurrentRound();
-        if (currentRound >= amountRounds) {
-            return GameStatus.FINISHED;
-        }
-        if (this.guessed.get(player)[currentRound]) {
-            for (Map.Entry<Player, Boolean[]> entry : this.guessed.entrySet()) {
-                if (!entry.getValue()[currentRound]) {
-                    return GameStatus.WAITING;
-                }
-            }
-        }
-        return GameStatus.GUESSING;
+    @Override
+    public PlayerStatus getPlayerStatus(Player player) {
+        return this.playerStatus.get(player);
+    }
+
+    @Override
+    public void setPlayerStatus(Player player, PlayerStatus playerStatus) {
+        this.playerStatus.put(player, playerStatus);
+    }
+
+    @Override
+    public boolean playersSynced() {
+        return this.playerStatus.entrySet().stream().allMatch(p -> p.getValue().equals(PlayerStatus.GUESSING));
     }
 
     public GameRound[] getCurrentOpponentGameRounds(Player player) {

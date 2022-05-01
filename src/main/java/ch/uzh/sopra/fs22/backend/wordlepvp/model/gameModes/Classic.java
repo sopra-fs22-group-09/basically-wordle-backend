@@ -136,6 +136,21 @@ public class Classic implements Game, Serializable {
         // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score
     }
 
+    @Override
+    public PlayerStatus getPlayerStatus(Player player) {
+        return null;
+    }
+
+    @Override
+    public void setPlayerStatus(Player player, PlayerStatus playerStatus) {
+
+    }
+
+    @Override
+    public boolean playersSynced() {
+        return false;
+    }
+
     public GameRound getCurrentGameRound(Player player) {
         return null;
     }
