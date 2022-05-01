@@ -1,9 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameRound;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStats;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.GameService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.AuthorizationHelper;
@@ -25,9 +22,9 @@ public class GameController {
     private final PlayerService playerService;
 
     @MutationMapping
-    public Mono<Game> startGame(@ContextValue(name = "Authorization") String authHeader) {
+    public Mono<Boolean> announceStandby(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.gameService.initializeGame(player);
+        return this.gameService.markStandBy(player);
     }
 
     @MutationMapping
@@ -36,16 +33,22 @@ public class GameController {
         return this.gameService.submitWord(word, player);
     }
 
-    @MutationMapping
-    public Mono<GameRound> nextGameRound(@ContextValue(name = "Authorization") String authHeader) {
-        Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.gameService.initializeNextGameRound(player);
-    }
-
     @QueryMapping
     public Mono<GameStats> concludeGame(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.gameService.getConclusion(player);
+    }
+
+    @SubscriptionMapping
+    public Flux<PlayerStatus> playerStatus(@ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.gameService.getPlayerStatus(player);
+    }
+
+    @SubscriptionMapping
+    public Flux<GameStatus> gameStatus(@ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.gameService.getGameStatus(player);
     }
 
     @SubscriptionMapping

@@ -42,7 +42,7 @@ public class PlayerService {
         return this.playerRepository.findById(this.authRepository.getUserID(token).toString())
                 .doOnNext(player -> {
                     if (player == null) {
-                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player does not exist!");
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are unauthorized!");
                     }
                 });
     }

@@ -35,7 +35,7 @@ public class LobbyService {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Lobby size is too big.");
         }
 
-        return player.map(p -> {
+        return player.publishOn(Schedulers.boundedElastic()).map(p -> {
             Lobby lobby = Lobby.builder()
                     .id(UUID.randomUUID().toString())
                     .name(input.getName())
@@ -49,7 +49,6 @@ public class LobbyService {
             lobby.setGame(this.createGame(lobby.getId(), lobby.getGameMode()));
             return lobby;
         })
-                .publishOn(Schedulers.boundedElastic())
                 .flatMap(this.lobbyRepository::saveLobby)
                 .log();
 
@@ -62,7 +61,6 @@ public class LobbyService {
                     l.getPlayers().add(p);
                     return l;
                 })
-                .publishOn(Schedulers.boundedElastic())
                 .flatMap(this.lobbyRepository::saveLobby)
                 .log();
 
@@ -115,7 +113,7 @@ public class LobbyService {
                             if (!l.getPlayers().isEmpty()) {
                                 this.lobbyRepository.saveLobby(l).subscribe();
                             } else {
-                                this.lobbyRepository.deleteLobby(l.getId());
+                                this.lobbyRepository.deleteLobby(l.getId()).subscribe();
                             }
                             return l;
                         }).subscribe()
@@ -134,6 +132,7 @@ public class LobbyService {
             Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + gameMode.getClassName()).asSubclass(Game.class);
             Game game = gameClass.getDeclaredConstructor().newInstance();
             game.setId(lobbyId);
+            game.setStatus(GameStatus.NEW);
             return game;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");

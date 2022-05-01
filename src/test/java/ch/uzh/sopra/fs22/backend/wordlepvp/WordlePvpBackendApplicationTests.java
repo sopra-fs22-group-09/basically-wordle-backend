@@ -1,15 +1,19 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @SpringBootTest
 @Testcontainers
 class WordlePvpBackendApplicationTests {
@@ -37,7 +41,10 @@ class WordlePvpBackendApplicationTests {
 		redisContainer.start();
 	}
 
-	@Test
+	@Autowired
+	RedisOperations<String, String> redisOperations;
+
+/*	@Test
 	void testContainersRunning() {
 		assertTrue(postgresqlContainer.isRunning());
 		assertTrue(redisContainer.isRunning());
@@ -45,6 +52,8 @@ class WordlePvpBackendApplicationTests {
 
 	@Test
 	void contextLoads() {
-	}
+		redisOperations.opsForValue().set("key", "value");
+		assertEquals("value", redisOperations.opsForValue().get("key"));
+	}*/
 
 }

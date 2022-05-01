@@ -45,7 +45,6 @@ public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
         return chain.next(request).publishOn(Schedulers.boundedElastic()).mapNotNull(response -> {
             if (!response.getExecutionResult().isDataPresent() || !response.isValid()) return response;
             ObjectMapper oMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-//            if (response.getExecutionResult().isDataPresent()) {
             try {
                 /* FIXME: class graphql.execution.reactive.SubscriptionPublisher cannot be cast to class
                    java.util.Map (graphql.execution.reactive.SubscriptionPublisher is in unnamed module of loader 'app';

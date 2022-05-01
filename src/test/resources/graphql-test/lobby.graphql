@@ -1,0 +1,17 @@
+subscription {
+    lobby {
+        owner {
+            id
+        }
+        status
+        gameMode
+        game {
+            amountRounds
+            roundTime
+        }
+        players {
+            id
+            name
+        }
+    }
+}

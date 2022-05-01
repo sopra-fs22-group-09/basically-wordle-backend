@@ -2,21 +2,18 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.*;
 
 @Data
-@NoArgsConstructor
 public class SonicFast implements Game, Serializable {
 
     private String id;
     private int amountRounds = 1;
     private int roundTime = 0;
+    private GameStatus status;
 
     private final Random r = new SecureRandom();
     private String[] repoWords;
@@ -27,6 +24,8 @@ public class SonicFast implements Game, Serializable {
     private Map<Player, GameStats> gameStats;
     private Map<Player, Integer[]> guesses; //(add mapping to gameround) getCurrentGameround()
     private Map<Player, Boolean[]> guessed; //add mapping to player
+
+    private Map<Player, PlayerStatus> playerStatus = new HashMap<>();
 
     public Game start(Set<Player> players, String[] repoWords) {
         this.repoWords = repoWords;
@@ -53,6 +52,7 @@ public class SonicFast implements Game, Serializable {
             this.guessed.put(player, guessed);
             this.game.put(player, gameRounds);
             this.currentGameRound.put(player, this.game.get(player)[0]);
+            this.currentGameRound.get(player).setStart(System.nanoTime());
         }
         return this;
     }
@@ -61,9 +61,6 @@ public class SonicFast implements Game, Serializable {
 /*        if (Objects.equals(guess, this.targetWords[this.currentGameRound.get(player).getCurrentRound()])) {
             this.currentGameRound.get(player).setFinish(System.nanoTime());
         }*/
-        if (this.currentGameRound.get(player).getFinish() != 0) {
-            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "The GameRound has already finished.");
-        }
 
         if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] || guess.length() != 5) {
             return this;
@@ -104,47 +101,107 @@ public class SonicFast implements Game, Serializable {
             Boolean[] updatedGuessed = this.guessed.get(player);
             updatedGuessed[this.currentGameRound.get(player).getCurrentRound()] = true;
             this.guessed.put(player, updatedGuessed);
-            this.endGame(player);
+          //  this.endGame(player);
         }
-        /*for (int i=0; i < letterState[guesses].length; i++) {
-            if (letterState[guesses][i] != LetterState.CORRECTPOSITION) {
-                break;
-            }
-            this.guessed = true;
-            this.endGame();
-        }*/
 
         this.currentGameRound.get(player).setLetterStates(letterState);
         Integer[] updatedGuesses = this.guesses.get(player);
         updatedGuesses[this.currentGameRound.get(player).getCurrentRound()] = updatedGuesses[this.currentGameRound.get(player).getCurrentRound()] + 1;
         this.guesses.put(player, updatedGuesses);
-        if (this.guesses.get(player)[this.currentGameRound.get(player).getCurrentRound()] >= 6 && !this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()]) {
-            this.endGame(player);
+        if (this.guesses.get(player)[this.currentGameRound.get(player).getCurrentRound()] >= 6) {
+            this.endRound(player);
+        }
+        if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] && this.currentGameRound.get(player).getCurrentRound() <= (amountRounds - 2)) {
+            this.endRound(player);
+        }
+        if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] && this.currentGameRound.get(player).getCurrentRound() > (amountRounds - 2)) {
+            this.endRound(player);
         }
         return this;
     }
 
-    public GameStats concludeGame() {
-        return null;
-    }
+    public GameStats concludeGame(Player player) {
+        if (this.currentGameRound.get(player).getFinish() == 0L) {
+            return null;
+        }
+        LetterState[][] letterState = this.currentGameRound.get(player).getLetterStates();
+        int numberWon = 0;
+        int roundsTaken = 0;
+        for (int i = 0; i < this.guesses.get(player).length; i++) {
+            roundsTaken += this.guesses.get(player)[i];
+        }
+        long elapsedTime = (this.currentGameRound.get(player).getFinish() - this.game.get(player)[0].getStart()) / 1000000000;
+        long hours = elapsedTime / 3600;
+        long minutes = (elapsedTime % 3600) / 60;
+        long seconds = elapsedTime % 60;
+        String timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
 
-    public void endGame(Player player) {
-        this.currentGameRound.get(player).setFinish(System.nanoTime());
-    }
+        this.gameStats.get(player).setTimeTaken(timeString);
+        this.gameStats.get(player).setRoundsTaken(roundsTaken);
+        if (this.amountRounds == 1) {
+            this.gameStats.get(player).setTargetWord(this.currentGameRound.get(player).getTargetWord());
+        }
 
-    public Game newGameRound(Player player) {
-        if (this.currentGameRound.get(player).getFinish() != 0) {
-            int nextRound = this.currentGameRound.get(player).getCurrentRound() + 1;
-            if (nextRound >= amountRounds) {
-                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "The Game has already finished.");
+        for (int i=0; i < this.guessed.get(player).length; i++) {
+            boolean isGuessed = this.guessed.get(player)[i];
+            if (isGuessed) {
+                numberWon += 1;
             }
-            this.currentGameRound.put(player, this.game.get(player)[nextRound]);
         }
-        return this;
+        if (numberWon >= 1) {
+            this.gameStats.get(player).setRank(numberWon);
+            this.gameStats.get(player).setScore((amountRounds * 100) / (roundsTaken / amountRounds));
+        }
+        else {
+            this.gameStats.get(player).setRank(0);
+            this.gameStats.get(player).setScore(0);
+        }
+        return this.gameStats.get(player);
+        //conclude stats and show them to the player
+        // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score
+    }
+
+    public void endRound(Player player) {
+        this.currentGameRound.get(player).setFinish(System.nanoTime());
+
+        int currentRound = this.currentGameRound.get(player).getCurrentRound();
+
+        boolean allDone = true;
+        for (Map.Entry<Player, Integer[]> entry : this.guesses.entrySet()) {
+            if (!this.guessed.get(entry.getKey())[currentRound] && entry.getValue()[currentRound] < 6) {
+                allDone = false;
+                this.playerStatus.put(entry.getKey(), PlayerStatus.WAITING);
+                break;
+            }
+        }
+        if (allDone) {
+            int nextRound = this.currentGameRound.get(player).getCurrentRound() + 1;
+            if (nextRound < amountRounds) {
+                this.playerStatus.replaceAll((k, v) -> PlayerStatus.GUESSING);
+                this.currentGameRound.replaceAll((k, v) -> this.game.get(k)[nextRound]);
+            } else {
+                this.setStatus(GameStatus.FINISHED);
+            }
+        }
     }
 
     public GameRound getCurrentGameRound(Player player) {
         return this.currentGameRound.get(player);
+    }
+
+    @Override
+    public PlayerStatus getPlayerStatus(Player player) {
+        return this.playerStatus.get(player);
+    }
+
+    @Override
+    public void setPlayerStatus(Player player, PlayerStatus playerStatus) {
+        this.playerStatus.put(player, playerStatus);
+    }
+
+    @Override
+    public boolean playersSynced() {
+        return this.playerStatus.entrySet().stream().allMatch(p -> p.getValue().equals(PlayerStatus.GUESSING));
     }
 
     public GameRound[] getCurrentOpponentGameRounds(Player player) {

@@ -19,6 +19,7 @@ public class Classic implements Game, Serializable {
     private int amountRounds = 1;
     private int roundTime = 0;
     private int guesses = 0;
+    private GameStatus status;
 
     private boolean guessed = false;
 
@@ -100,7 +101,7 @@ public class Classic implements Game, Serializable {
     }
 
     // player wins the game
-    public GameStats concludeGame() {
+    public GameStats concludeGame(Player player) {
         if (gameRound.getFinish() == 0L) {
             return null;
         }
@@ -135,11 +136,26 @@ public class Classic implements Game, Serializable {
         // return all infos in model GameStats: time taken, rounds taken, targetWord, info if player has won, score
     }
 
-    public Game newGameRound(Player player) {
-        return this;
+    @Override
+    public PlayerStatus getPlayerStatus(Player player) {
+        return null;
+    }
+
+    @Override
+    public void setPlayerStatus(Player player, PlayerStatus playerStatus) {
+
+    }
+
+    @Override
+    public boolean playersSynced() {
+        return false;
     }
 
     public GameRound getCurrentGameRound(Player player) {
+        return null;
+    }
+
+    public GameStatus getCurrentGameStatus(Player player) {
         return null;
     }
 

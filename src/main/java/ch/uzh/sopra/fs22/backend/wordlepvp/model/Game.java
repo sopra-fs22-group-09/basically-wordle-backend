@@ -16,9 +16,14 @@ public interface Game {
     void setRoundTime(int roundTime);
 
     Game start(Set<Player> players, String[] repoWords);
-    Game newGameRound(Player player);
     Game guess(Player player, String word);
-    GameStats concludeGame();
+    GameStats concludeGame(Player player);
+
+    GameStatus getStatus();
+    void setStatus(GameStatus status);
+    PlayerStatus getPlayerStatus(Player player);
+    void setPlayerStatus(Player player, PlayerStatus playerStatus);
+    boolean playersSynced();
 
     GameRound getCurrentGameRound(Player player);
     GameRound[] getCurrentOpponentGameRounds(Player player);

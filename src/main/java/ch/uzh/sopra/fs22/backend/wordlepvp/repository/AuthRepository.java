@@ -33,7 +33,7 @@ public class AuthRepository {
     }
 
     public UUID getUserID(String token) {
-        return redisTemplate.opsForValue().get(token);
+        return redisTemplate.opsForValue().getAndExpire(token, logoutAfter);
     }
 
     public void expire(String token) {

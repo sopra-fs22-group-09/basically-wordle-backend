@@ -24,9 +24,8 @@ type Mutation {
     #requestFriendByUserId(id: ID!): ID
     #sendMessageToUserId(input: MessageInput!): Message
 
-    startGame: Game
+    announceStandby: Boolean
     submitGuess(word: String!): GameRound
-    nextGameRound: GameRound
     #playAgain: ID # I suggest we use the Lobby ID?
 }
 type Subscription {
@@ -39,8 +38,9 @@ type Subscription {
     #friendRequest: ID # ID instead of User
     #chatMessages: Message
 
-    #gameStatusChange: ID # I suggest we create an enum?       // We probably don't need this? or maybe only for pvp?
     #lobbyReady: ID # I suggest we use the Lobby ID?
+    playerStatus: PlayerStatus
+    gameStatus: GameStatus
     opponentGameRound: [GameRound]
 }
 #--------------------------------------------------
@@ -130,10 +130,6 @@ type GameRound {
     words: [String]
     letterStates: [[LetterState]]
 }
-type OpponentGameState {
-    playerID: ID
-    gameRound: GameRound
-}
 type GameStats {
     targetWord: String
     roundsTaken: Int
@@ -173,6 +169,17 @@ enum LobbyStatus {
     OPEN
     FULL
     INGAME
+}
+enum PlayerStatus {
+    SYNCING
+    GUESSING
+    WAITING
+}
+enum GameStatus {
+    NEW
+    PREPARING
+    PLAYING
+    FINISHED
 }
 enum LetterState {
     UNKNOWN

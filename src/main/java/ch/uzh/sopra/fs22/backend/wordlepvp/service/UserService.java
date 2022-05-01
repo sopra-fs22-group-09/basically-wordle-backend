@@ -8,7 +8,6 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetTokenInput;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,7 +137,7 @@ public class UserService {
         try {
             user = userRepository.findById(authRepository.getUserID(token));
             if (user.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The requested action could not be completed.");
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are unauthorized!");
             }
         } catch (Exception ignored) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: The requested action could not be completed.");
