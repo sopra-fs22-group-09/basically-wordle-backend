@@ -19,6 +19,7 @@ public class WordCombination implements Game, Serializable {
     private String id;
     private int amountRounds = 1;
     private int roundTime = 0;
+    private GameStatus status;
 
     private final Random r = new SecureRandom();
     private String[] repoWords;

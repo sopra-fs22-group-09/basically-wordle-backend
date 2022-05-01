@@ -24,6 +24,7 @@ public class LobbyRepository {
         return this.reactiveRedisTemplate.<String, Lobby>opsForHash()
                 .put("lobbies", lobby.getId(), lobby)
                 .map(l -> lobby)
+                // TODO: Should move to service when refactoring.
                 .publishOn(Schedulers.boundedElastic())
                 .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobby/" + l.getId(), l).subscribe())
                 .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbies", l).subscribe())
@@ -46,6 +47,7 @@ public class LobbyRepository {
     }
 
     public Flux<Lobby> getLobbyStream(String id) {
+        // TODO: Should move to service when refactoring.
         return this.reactiveRedisTemplate.listenToChannel("lobby/" + id)
                 .map(ReactiveSubscription.Message::getMessage)
                 .publishOn(Schedulers.boundedElastic())

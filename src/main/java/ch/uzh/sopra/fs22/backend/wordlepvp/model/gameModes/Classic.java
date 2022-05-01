@@ -19,6 +19,7 @@ public class Classic implements Game, Serializable {
     private int amountRounds = 1;
     private int roundTime = 0;
     private int guesses = 0;
+    private GameStatus status;
 
     private boolean guessed = false;
 

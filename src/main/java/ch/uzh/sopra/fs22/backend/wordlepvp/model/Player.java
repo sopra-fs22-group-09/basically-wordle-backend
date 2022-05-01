@@ -23,4 +23,6 @@ public class Player implements Serializable {
 
     private String lobbyId;
 
+    private boolean isSynced;
+
 }

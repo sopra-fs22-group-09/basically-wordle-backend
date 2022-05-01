@@ -20,6 +20,7 @@ public interface Game {
     GameStats concludeGame(Player player);
 
     GameRound getCurrentGameRound(Player player);
-    GameStatus getCurrentGameStatus(Player player);
+    GameStatus getStatus();
+    void setStatus(GameStatus status);
     GameRound[] getCurrentOpponentGameRounds(Player player);
 }

@@ -24,7 +24,7 @@ type Mutation {
     #requestFriendByUserId(id: ID!): ID
     #sendMessageToUserId(input: MessageInput!): Message
 
-    startGame: Game
+    announceStandby: Boolean
     submitGuess(word: String!): GameRound
     #playAgain: ID # I suggest we use the Lobby ID?
 }

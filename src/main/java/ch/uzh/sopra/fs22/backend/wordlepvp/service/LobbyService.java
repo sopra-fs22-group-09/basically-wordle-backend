@@ -35,7 +35,8 @@ public class LobbyService {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Lobby size is too big.");
         }
 
-        return player.map(p -> {
+        return player.publishOn(Schedulers.boundedElastic())
+                .map(p -> {
             Lobby lobby = Lobby.builder()
                     .id(UUID.randomUUID().toString())
                     .name(input.getName())
@@ -121,7 +122,6 @@ public class LobbyService {
                         }).subscribe()
                 )
                 .log();
-
     }
 
     public Flux<Lobby> getLobbies() {
@@ -134,6 +134,7 @@ public class LobbyService {
             Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + gameMode.getClassName()).asSubclass(Game.class);
             Game game = gameClass.getDeclaredConstructor().newInstance();
             game.setId(lobbyId);
+            game.setStatus(GameStatus.NEW);
             return game;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
