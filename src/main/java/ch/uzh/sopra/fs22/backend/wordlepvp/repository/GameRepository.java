@@ -24,8 +24,8 @@ public class GameRepository {
         return this.reactiveGameRedisTemplate.<String, Game>opsForHash()
                 .put("games", game.getId(), game)
                 .map(g -> game)
-                .flatMap(g -> this.reactiveGameStatusRedisTemplate.convertAndSend("gamesync/" + g.getId(), g.getStatus()).zipWith(Mono.just(g)))
-                .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + g.getT2().getId(), g.getT2()))
+                .flatMap(g -> this.reactiveGameStatusRedisTemplate.convertAndSend("gamesync/" + g.getId(), GameStatus.PLAYING))
+                .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + game.getId(), game))
                 .then(Mono.just(game))
                 .log();
 
