@@ -40,12 +40,6 @@ public class GameController {
     }
 
     @SubscriptionMapping
-    public Flux<PlayerStatus> playerStatus(@ContextValue(name = "Authorization") String authHeader) {
-        Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.gameService.getPlayerStatus(player);
-    }
-
-    @SubscriptionMapping
     public Flux<GameStatus> gameStatus(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.gameService.getGameStatus(player);

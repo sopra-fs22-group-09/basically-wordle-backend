@@ -19,19 +19,14 @@ import reactor.core.publisher.Mono;
 public class GameService {
 
     private final GameRepository gameRepository;
-
     private final LobbyRepository lobbyRepository;
-
     private final WordsRepository wordsRepository;
 
-    private final ReactiveRedisTemplate<String, GameStatus> reactiveRedisTemplate;
-
     @Autowired
-    public GameService(GameRepository gameRepository, LobbyRepository lobbyRepository, WordsRepository wordsRepository, ReactiveRedisTemplate<String, GameStatus> reactiveRedisTemplate) {
+    public GameService(GameRepository gameRepository, LobbyRepository lobbyRepository, WordsRepository wordsRepository) {
         this.gameRepository = gameRepository;
         this.lobbyRepository = lobbyRepository;
         this.wordsRepository = wordsRepository;
-        this.reactiveRedisTemplate = reactiveRedisTemplate;
     }
 
     public Mono<Game> initializeGame(Mono<Player> player) {
@@ -64,20 +59,11 @@ public class GameService {
 
     }
 
-    public Flux<PlayerStatus> getPlayerStatus(Mono<Player> player) {
-
-        return player.map(Player::getLobbyId)
-                .flatMapMany(this.gameRepository::getGameStream)
-                .zipWith(player, Game::getPlayerStatus)
-                .log();
-
-    }
-
     public Flux<GameStatus> getGameStatus(Mono<Player> player) {
 
         return player.map(Player::getLobbyId)
-                .flatMapMany(id -> this.reactiveRedisTemplate.listenToChannel("gamesync/" + id))
-                .map(ReactiveSubscription.Message::getMessage)
+                .flatMapMany(this.gameRepository::getGameStream)
+                .zipWith(player, Game::getGameStatus)
                 .log();
 
     }
@@ -96,21 +82,17 @@ public class GameService {
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .flatMap(l -> initializeGame(player))
-//                .map(l -> this.reactiveRedisTemplate
-//                                .convertAndSend("gamesync/" + l.getId(), GameStatus.PLAYING))
 //                .zipWith(player)
 //                .mapNotNull(t -> {
-//                    if (t.getT1().getOwner().getId().equals(t.getT2().getId())
-//                            && t.getT1().getGame().getStatus() == GameStatus.NEW) {
-//                        t.getT1().getGame().setStatus(GameStatus.PREPARING);
-//                        t.getT1().getPlayers().forEach(p -> t.getT1().getGame().setPlayerStatus(p, PlayerStatus.SYNCING));
+//                    if (t.getT1().getOwner().getId().equals(t.getT2().getId())) {
+//                        t.getT1().getPlayers().forEach(p -> t.getT1().getGame().setPlayerStatus(p, GameStatus.SYNCING));
 //                        return t;
 //                    }
-//                    return t.getT1().getGame().getStatus() == GameStatus.PREPARING ? t : null;
+//                    return t.getT().getGameStatus() == GameStatus.SYNCING ? t : null;
 //                })
 ///*                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
 //                        "There is currently no sync in progress for this lobby.")))*/
-//                .doOnNext(t -> t.getT1().getGame().setPlayerStatus(t.getT2(), PlayerStatus.GUESSING))
+//                .doOnNext(t -> t.getT1().getGame().setGameStatus(t.getT2(), PlayerStatus.GUESSING))
 //                .log()
 ///*                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
 //                        "You are not currently in a lobby.")))*/
@@ -118,10 +100,10 @@ public class GameService {
 //                .log()
 //                .mapNotNull(l -> {
 //                    if (l.getGame().playersSynced()) {
-//                        l.getGame().setStatus(GameStatus.PLAYING);
+//                        t.getT1().getPlayers().forEach(p -> t.getT1().getGame().setPlayerStatus(p, GameStatus.GUESSING));
 //                        return initializeGame(player);
 //                    } else {
-//                        return this.reactiveRedisTemplate
+//                        return this.reactiveRedisTemplate  //doesn't exist anymore. just save the game.
 //                                .convertAndSend("gamesync/" + l.getGame().getId(), l.getGame().getStatus());
 //                    }
 //                })

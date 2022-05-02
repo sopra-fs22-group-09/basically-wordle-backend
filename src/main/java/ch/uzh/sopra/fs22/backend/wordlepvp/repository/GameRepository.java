@@ -13,19 +13,16 @@ import reactor.core.scheduler.Schedulers;
 public class GameRepository {
 
     private final ReactiveRedisTemplate<String, Game> reactiveGameRedisTemplate;
-    private final ReactiveRedisTemplate<String, GameStatus> reactiveGameStatusRedisTemplate;
 
-    public GameRepository(ReactiveRedisTemplate<String, Game> reactiveGameRedisTemplate, ReactiveRedisTemplate<String, GameStatus> reactiveGameStatusRedisTemplate) {
+    public GameRepository(ReactiveRedisTemplate<String, Game> reactiveGameRedisTemplate) {
         this.reactiveGameRedisTemplate = reactiveGameRedisTemplate;
-        this.reactiveGameStatusRedisTemplate = reactiveGameStatusRedisTemplate;
     }
 
     public Mono<Game> saveGame(Game game) {
         return this.reactiveGameRedisTemplate.<String, Game>opsForHash()
                 .put("games", game.getId(), game)
                 .map(g -> game)
-                .flatMap(g -> this.reactiveGameStatusRedisTemplate.convertAndSend("gamesync/" + g.getId(), GameStatus.PLAYING))
-                .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + game.getId(), game))
+                .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + g.getId(), g))
                 .then(Mono.just(game))
                 .log();
 
@@ -51,4 +48,5 @@ public class GameRepository {
                 .map(ReactiveSubscription.Message::getMessage)
                 .log();
     }
+
 }

@@ -40,7 +40,6 @@ type Subscription {
     #chatMessages: Message
 
     #lobbyReady: ID # I suggest we use the Lobby ID?
-    playerStatus: PlayerStatus
     gameStatus: GameStatus
     opponentGameRound: [GameRound]
 }

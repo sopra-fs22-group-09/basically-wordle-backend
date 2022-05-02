@@ -13,7 +13,6 @@ public class SonicFast implements Game, Serializable {
     private String id;
     private int amountRounds = 1;
     private int roundTime = 0;
-    private GameStatus status;
 
     private final Random r = new SecureRandom();
     private String[] repoWords;
@@ -25,7 +24,7 @@ public class SonicFast implements Game, Serializable {
     private Map<Player, Integer[]> guesses; //(add mapping to gameround) getCurrentGameround()
     private Map<Player, Boolean[]> guessed; //add mapping to player
 
-    private Map<Player, PlayerStatus> playerStatus = new HashMap<>();
+    private Map<Player, GameStatus> playerStatus = new HashMap<>();
 
     public Game start(Set<Player> players, String[] repoWords) {
         this.repoWords = repoWords;
@@ -171,19 +170,33 @@ public class SonicFast implements Game, Serializable {
         for (Map.Entry<Player, Integer[]> entry : this.guesses.entrySet()) {
             if (!this.guessed.get(entry.getKey())[currentRound] && entry.getValue()[currentRound] < 6) {
                 allDone = false;
-                this.playerStatus.put(entry.getKey(), PlayerStatus.WAITING);
+                this.playerStatus.put(entry.getKey(), GameStatus.WAITING);
                 break;
             }
         }
         if (allDone) {
             int nextRound = this.currentGameRound.get(player).getCurrentRound() + 1;
             if (nextRound < amountRounds) {
-                this.playerStatus.replaceAll((k, v) -> PlayerStatus.GUESSING);
+                this.playerStatus.replaceAll((k, v) -> GameStatus.GUESSING);
                 this.currentGameRound.replaceAll((k, v) -> this.game.get(k)[nextRound]);
             } else {
-                this.setStatus(GameStatus.FINISHED);
+                this.playerStatus.replaceAll((k, v) -> GameStatus.FINISHED);
             }
         }
+    }
+
+
+    public GameStatus getGameStatus(Player player) {
+        return this.playerStatus.get(player);
+    }
+
+    public void setGameStatus(Player player, GameStatus gameStatus) {
+        this.playerStatus.put(player, gameStatus);
+    }
+
+    @Override
+    public boolean playersSynced() {
+        return this.playerStatus.entrySet().stream().noneMatch(p -> p.getValue().equals(GameStatus.SYNCING));
     }
 
     public GameRound getCurrentGameRound(Player player) {
@@ -192,21 +205,6 @@ public class SonicFast implements Game, Serializable {
             return this.game.get(player)[currentRound - 1];
         }
         return this.currentGameRound.get(player);
-    }
-
-    @Override
-    public PlayerStatus getPlayerStatus(Player player) {
-        return this.playerStatus.get(player);
-    }
-
-    @Override
-    public void setPlayerStatus(Player player, PlayerStatus playerStatus) {
-        this.playerStatus.put(player, playerStatus);
-    }
-
-    @Override
-    public boolean playersSynced() {
-        return this.playerStatus.entrySet().stream().allMatch(p -> p.getValue().equals(PlayerStatus.GUESSING));
     }
 
     public GameRound[] getCurrentOpponentGameRounds(Player player) {

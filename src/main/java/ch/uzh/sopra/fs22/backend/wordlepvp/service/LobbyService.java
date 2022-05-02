@@ -132,7 +132,6 @@ public class LobbyService {
             Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + gameMode.getClassName()).asSubclass(Game.class);
             Game game = gameClass.getDeclaredConstructor().newInstance();
             game.setId(lobbyId);
-            game.setStatus(GameStatus.NEW);
             return game;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");

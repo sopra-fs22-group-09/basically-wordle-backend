@@ -29,22 +29,12 @@ public abstract class GameLogic implements Game {
     }
 
     @Override
-    public GameStatus getStatus() {
+    public GameStatus getGameStatus(Player player) {
         return null;
     }
 
     @Override
-    public void setStatus(GameStatus status) {
-
-    }
-
-    @Override
-    public PlayerStatus getPlayerStatus(Player player) {
-        return null;
-    }
-
-    @Override
-    public void setPlayerStatus(Player player, PlayerStatus playerStatus) {
+    public void setGameStatus(Player player, GameStatus gameStatus) {
 
     }
 

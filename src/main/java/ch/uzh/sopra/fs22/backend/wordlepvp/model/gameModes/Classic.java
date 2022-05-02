@@ -137,12 +137,12 @@ public class Classic implements Game, Serializable {
     }
 
     @Override
-    public PlayerStatus getPlayerStatus(Player player) {
+    public GameStatus getGameStatus(Player player) {
         return null;
     }
 
     @Override
-    public void setPlayerStatus(Player player, PlayerStatus playerStatus) {
+    public void setGameStatus(Player player, GameStatus gameStatus) {
 
     }
 
