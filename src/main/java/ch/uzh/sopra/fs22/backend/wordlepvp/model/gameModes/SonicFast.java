@@ -62,7 +62,7 @@ public class SonicFast implements Game, Serializable {
             this.currentGameRound.get(player).setFinish(System.nanoTime());
         }*/
 
-        if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] || guess.length() != 5) {
+        if (this.guessed.get(player)[this.currentGameRound.get(player).getCurrentRound()] /* || guess.length() >= 5*/) {
             return this;
         }
         String[] previousGuesses = this.currentGameRound.get(player).getWords();
@@ -108,6 +108,7 @@ public class SonicFast implements Game, Serializable {
         Integer[] updatedGuesses = this.guesses.get(player);
         updatedGuesses[this.currentGameRound.get(player).getCurrentRound()] = updatedGuesses[this.currentGameRound.get(player).getCurrentRound()] + 1;
         this.guesses.put(player, updatedGuesses);
+
         if (this.guesses.get(player)[this.currentGameRound.get(player).getCurrentRound()] >= 6) {
             this.endRound(player);
         }
@@ -186,6 +187,10 @@ public class SonicFast implements Game, Serializable {
     }
 
     public GameRound getCurrentGameRound(Player player) {
+        int currentRound = this.currentGameRound.get(player).getCurrentRound();
+        if (this.guesses.get(player)[currentRound] == 0) {
+            return this.game.get(player)[currentRound - 1];
+        }
         return this.currentGameRound.get(player);
     }
 

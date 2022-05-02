@@ -14,13 +14,13 @@ public class SecurityConfig {
     @Bean
     SecurityWebFilterChain springWebFilterChain(ServerHttpSecurity http) throws Exception {
         return http
-                .csrf(spec -> spec.disable())
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 // Demonstrate that method security works
                 // Best practice to use both for defense in depth
                 .authorizeExchange(requests -> requests.anyExchange().permitAll())
-                .logout(spec -> spec.disable())
+                .logout(ServerHttpSecurity.LogoutSpec::disable)
                 //.httpBasic(spec -> spec.disable())
-                .cors(spec -> spec.disable())
+                .cors(ServerHttpSecurity.CorsSpec::disable)
                 .build();
     }
 }
