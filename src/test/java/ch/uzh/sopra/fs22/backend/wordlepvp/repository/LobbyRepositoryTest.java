@@ -70,8 +70,54 @@ public class LobbyRepositoryTest {
                 .gameMode(GameCategory.PVP.getDefaultGameMode())
                 .players(new HashSet<>())
                 .build();
-
         this.lobbyRepository.saveLobby(testLobby).subscribe();
+
+        Mono<Lobby> lobby = this.reactiveRedisOperations.<String, Lobby>opsForHash()
+                .get("lobbies", "deadbeef-dead-beef-caff-deadbeefcaff");
+
+        StepVerifier.create(lobby)
+                .expectNext(testLobby)
+                .verifyComplete();
+    }
+
+    @Test
+    public void deleteLobbyTest() {
+
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(null)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .players(new HashSet<>())
+                .build();
+        this.reactiveRedisOperations.<String, Lobby>opsForHash()
+                .put("lobbies", testLobby.getId(), testLobby);
+
+        Mono<Long> deleted = this.lobbyRepository.deleteLobby("deadbeef-dead-beef-caff-deadbeefcaff");
+
+        StepVerifier.create(deleted)
+                .expectNext(1L)
+                .verifyComplete();
+    }
+
+    @Test
+    public void getLobbyTest() {
+
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(null)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .players(new HashSet<>())
+                .build();
+        this.reactiveRedisOperations.<String, Lobby>opsForHash()
+                .put("lobbies", testLobby.getId(), testLobby).subscribe();
 
         Mono<Lobby> lobby = this.lobbyRepository.getLobby("deadbeef-dead-beef-caff-deadbeefcaff");
 
