@@ -16,6 +16,8 @@ public interface Game {
     GameRound guess(Player player, String word);
     GameStats concludeGame(Player player);
 
+    Set<Player> getPlayers();
+
     GameStatus getGameStatus(Player player);
     void setGameStatus(Player player, GameStatus status);
 

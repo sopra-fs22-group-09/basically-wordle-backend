@@ -38,7 +38,7 @@ public class GameService {
                 .flatMap(this.lobbyRepository::getLobby)
                 .map(l -> l.getGame().start(l.getPlayers(), this.wordsRepository.getRandomWords(250)))
                 .flatMap(this.gameRepository::saveGame)
-                .flatMap(g -> this.reactiveRedisTemplate.convertAndSend("gameSync/" + g.getId(), GameStatus.GUESSING).thenReturn(g))
+//                .flatMap(g -> this.reactiveRedisTemplate.convertAndSend("gameSync/" + g.getId(), GameStatus.GUESSING).thenReturn(g))
                 .log();
 
     }
@@ -67,8 +67,8 @@ public class GameService {
 
     public Flux<GameStatus> getGameStatus(Mono<Player> player) {
 
-        return player.map(Player::getLobbyId)
-                .flatMapMany(id -> this.reactiveRedisTemplate.listenToChannel("gameSync/" + id))
+        return player.map(Player::getId)
+                .flatMapMany(pid -> this.reactiveRedisTemplate.listenToChannel("gameSync/" + pid))
                 .map(ReactiveSubscription.Message::getMessage)
                 .log();
 
@@ -114,8 +114,9 @@ public class GameService {
                 .flatMap(lp -> Mono.defer(() -> this.lobbyRepository.saveLobby(lp.getT1())))
                 .flatMap(l -> l.getPlayers().stream().anyMatch(p -> l.getGame().getGameStatus(p).equals(GameStatus.SYNCING)) ?
                         // TODO: Selectively notify players!
-                        this.reactiveRedisTemplate.convertAndSend("gameSync/" + l.getGame().getId(),
-                                GameStatus.SYNCING).then(Mono.empty())
+//                        this.reactiveRedisTemplate.convertAndSend("gameSync/" + l.getGame().getId(),
+//                                GameStatus.SYNCING).then(Mono.empty())
+                        this.gameRepository.saveGame(l.getGame())
                         :
                         Mono.just(l))
 //                .doOnNext(l -> l.getPlayers().forEach(p -> l.getGame().setGameStatus(p, GameStatus.GUESSING)))

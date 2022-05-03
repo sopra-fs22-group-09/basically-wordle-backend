@@ -67,6 +67,14 @@ public abstract class GameLogic implements Game, Serializable {
     }
 
     @Override
+    public Set<Player> getPlayers() {
+        if (currentGameStatus != null) {
+            return currentGameStatus.keySet();
+        }
+        return null;
+    }
+
+    @Override
     public GameStatus getGameStatus(Player player) {
         return this.currentGameStatus.get(player);
     }

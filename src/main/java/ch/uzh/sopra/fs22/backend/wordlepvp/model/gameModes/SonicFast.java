@@ -185,6 +185,10 @@ public class SonicFast implements Game, Serializable {
         }
     }
 
+    @Override
+    public Set<Player> getPlayers() {
+        return null;
+    }
 
     public GameStatus getGameStatus(Player player) {
         return this.playerStatus.get(player);
