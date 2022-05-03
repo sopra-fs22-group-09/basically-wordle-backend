@@ -25,7 +25,7 @@ type Mutation {
     #requestFriendByUserId(id: ID!): ID
     #sendMessageToUserId(input: MessageInput!): Message
 
-    announceStandby: Boolean
+    announceStandby: Game
     submitGuess(word: String!): GameRound
     #playAgain: ID # I suggest we use the Lobby ID?
 }
@@ -121,6 +121,7 @@ type Lobby {
 type Game {
     amountRounds: Int
     roundTime: Int
+    targetWords: [String]
     # wordCategories: Categories ??? how
 }
 type GameRound {

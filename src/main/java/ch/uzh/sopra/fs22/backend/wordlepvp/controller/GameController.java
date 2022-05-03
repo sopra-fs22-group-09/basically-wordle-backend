@@ -22,7 +22,7 @@ public class GameController {
     private final PlayerService playerService;
 
     @MutationMapping
-    public Mono<Boolean> announceStandby(@ContextValue(name = "Authorization") String authHeader) {
+    public Mono<Game> announceStandby(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.gameService.markStandBy(player);
     }

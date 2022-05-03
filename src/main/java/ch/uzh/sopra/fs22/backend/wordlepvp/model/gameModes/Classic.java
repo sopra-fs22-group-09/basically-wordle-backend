@@ -33,11 +33,11 @@ public class Classic implements Game, Serializable {
             this.gameRound = new GameRound(player, 0, repoWords[this.r.nextInt(repoWords.length)]);
         }
         this.gameStats = new GameStats();
-        gameRound.setStart(System.nanoTime());
+        //gameRound.setStart(System.nanoTime());
         return this;
     }
 
-    public Game guess(Player player, String guess) {
+    public GameRound guess(Player player, String guess) {
 
         if (this.guessed || guess.length() != 5) {
             return null;
@@ -47,7 +47,7 @@ public class Classic implements Game, Serializable {
             previousGuesses = new String[6];
         }
             previousGuesses[guesses] = guess;
-            gameRound.setWords(previousGuesses);
+            //gameRound.setWords(previousGuesses);
 
         String[] guess_chars = guess.split("");
         String[] targetWord_chars = gameRound.getTargetWord().split("");
@@ -86,18 +86,18 @@ public class Classic implements Game, Serializable {
             this.endGame();
         }*/
 
-        gameRound.setLetterStates(letterState);
+        //gameRound.setLetterStates(letterState);
         guesses++;
         if (guesses >= 6 && !this.guessed) {
             this.endGame();
         }
 
-        return this;
+        return this.gameRound;
     }
 
     // if game is lost/won
     public void endGame() {
-        gameRound.setFinish(System.nanoTime());
+        //gameRound.setFinish(System.nanoTime());
     }
 
     // player wins the game
@@ -144,11 +144,6 @@ public class Classic implements Game, Serializable {
     @Override
     public void setGameStatus(Player player, GameStatus gameStatus) {
 
-    }
-
-    @Override
-    public boolean playersSynced() {
-        return false;
     }
 
     public GameRound getCurrentGameRound(Player player) {
