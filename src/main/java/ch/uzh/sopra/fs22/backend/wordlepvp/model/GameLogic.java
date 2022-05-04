@@ -21,19 +21,19 @@ public abstract class GameLogic implements Game, Serializable {
     private String[] targetWords;
     private Map<Player, GameRound> game = new HashMap<>();
     private Map<Player, GameStatus> currentGameStatus = new HashMap<>();
+    private Map<Player, GameStats> gameStats = new HashMap<>();
 
     @Override
     public Game start(Set<Player> players, String[] repoWords) {
         this.repoWords = repoWords;
         this.targetWords = new String[this.amountRounds];
-        this.game = new HashMap<>();
 
         Random r = new SecureRandom();
         Arrays.setAll(targetWords, word -> this.repoWords[r.nextInt(this.repoWords.length)]);
         for (Player player : players) {
             this.game.put(player, new GameRound(player, 0, this.targetWords[0]));
-            //this.currentGameStatus.put(player, GameStatus.GUESSING);
         }
+
         return this;
     }
 
@@ -50,9 +50,10 @@ public abstract class GameLogic implements Game, Serializable {
             if (this.currentGameStatus.entrySet().stream().allMatch(p -> p.getValue().equals(GameStatus.WAITING))) {
                 int nextRound = this.game.get(player).getCurrentRound() + 1;
                 if (nextRound < amountRounds) {
+                    this.game.forEach((p, g) -> this.saveStats(p));
                     this.game.replaceAll((p, gr) -> new GameRound(p, nextRound, this.targetWords[nextRound]));
                     this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);
-                    //return this.game.get(player); maybe need that the last guesser also gets updated to the new screen
+                    //currentGameRound = this.game.get(player); maybe need that the last guesser also gets updated to the new screen
                 } else {
                     this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
                 }
@@ -63,15 +64,13 @@ public abstract class GameLogic implements Game, Serializable {
 
     @Override
     public GameStats concludeGame(Player player) {
-        return null;
-    }
-
-    @Override
-    public Set<Player> getPlayers() {
-        if (currentGameStatus != null) {
-            return currentGameStatus.keySet();
+        if (this.currentGameStatus.get(player).equals(GameStatus.WAITING)) {
+            return this.game.get(player).getGameStats();
+        } else if (this.currentGameStatus.get(player).equals(GameStatus.FINISHED)) {
+            return this.gameStats.get(player);
+        } else {
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -89,5 +88,17 @@ public abstract class GameLogic implements Game, Serializable {
         Map<Player, GameRound> tmpGame = new HashMap<>(Map.copyOf(game));
         tmpGame.remove(player);
         return tmpGame.values().toArray(new GameRound[0]);
+    }
+
+    @Override
+    public Set<Player> getPlayers() {
+        if (currentGameStatus != null) {
+            return currentGameStatus.keySet();
+        }
+        return null;
+    }
+
+    private void saveStats(Player player) {
+        // save overall stats
     }
 }
