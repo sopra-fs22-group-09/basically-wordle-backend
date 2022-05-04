@@ -140,7 +140,7 @@ public class UserService {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are unauthorized!");
             }
         } catch (Exception ignored) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: The requested action could not be completed.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are unauthorized!");
         }
         return user.get();
     }

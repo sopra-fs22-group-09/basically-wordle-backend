@@ -1,26 +1,49 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
 
-@Data
+@Getter
+@RequiredArgsConstructor
 public class GameRound implements Serializable {
 
-    private Player player;
-    private int currentRound;
-    private String targetWord;
+    private final Player player;
+    private final int currentRound;
+    private final String targetWord;
+    private int currentGuess = 0;
 
-    public GameRound(Player player, int currentRound, String targetWord) {
-        this.player = player;
-        this.currentRound = currentRound;
-        this.targetWord = targetWord;
-    }
+    private final String[] words = new String[6];
+    private final LetterState[][] letterStates = new LetterState[6][5];
 
-    private String[] words;
-    private LetterState[][] letterStates;
-
-    private long start;
+    private final long start = System.nanoTime();
     private long finish;
 
+    public GameRound makeGuess(String word) {
+
+        if (this.finish != 0L) {
+            return this;
+        }
+        this.words[this.currentGuess] = word;
+        for (int i = 0; i < word.length(); i++) {
+            if (this.targetWord.charAt(i) == word.charAt(i)) {
+                this.letterStates[this.currentGuess][i] = LetterState.CORRECTPOSITION;
+            } else if (targetWord.contains(Character.toString(word.charAt(i)))) {
+                this.letterStates[this.currentGuess][i] = LetterState.INWORD;
+            } else {
+                this.letterStates[this.currentGuess][i] = LetterState.WRONG;
+            }
+        }
+        if (this.targetWord.equals(word) || this.currentGuess >= 5) {
+            this.endRound();
+        } else {
+            this.currentGuess += 1;
+        }
+        return this;
+    }
+
+    private void endRound() {
+        this.finish = System.nanoTime();
+    }
 }

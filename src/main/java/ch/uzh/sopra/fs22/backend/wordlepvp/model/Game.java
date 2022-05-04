@@ -9,22 +9,17 @@ public interface Game {
     String getId();
     void setId(String id);
 
-    int getAmountRounds();
     void setAmountRounds(int amountRounds);
-
-    int getRoundTime();
     void setRoundTime(int roundTime);
 
     Game start(Set<Player> players, String[] repoWords);
-    Game guess(Player player, String word);
+    GameRound guess(Player player, String word);
     GameStats concludeGame(Player player);
 
-    GameStatus getStatus();
-    void setStatus(GameStatus status);
-    PlayerStatus getPlayerStatus(Player player);
-    void setPlayerStatus(Player player, PlayerStatus playerStatus);
-    boolean playersSynced();
+    Set<Player> getPlayers();
 
-    GameRound getCurrentGameRound(Player player);
+    GameStatus getGameStatus(Player player);
+    void setGameStatus(Player player, GameStatus status);
+
     GameRound[] getCurrentOpponentGameRounds(Player player);
 }

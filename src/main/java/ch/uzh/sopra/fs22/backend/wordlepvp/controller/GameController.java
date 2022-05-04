@@ -22,7 +22,7 @@ public class GameController {
     private final PlayerService playerService;
 
     @MutationMapping
-    public Mono<Boolean> announceStandby(@ContextValue(name = "Authorization") String authHeader) {
+    public Mono<Game> announceStandby(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.gameService.markStandBy(player);
     }
@@ -37,12 +37,6 @@ public class GameController {
     public Mono<GameStats> concludeGame(@ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.gameService.getConclusion(player);
-    }
-
-    @SubscriptionMapping
-    public Flux<PlayerStatus> playerStatus(@ContextValue(name = "Authorization") String authHeader) {
-        Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.gameService.getPlayerStatus(player);
     }
 
     @SubscriptionMapping

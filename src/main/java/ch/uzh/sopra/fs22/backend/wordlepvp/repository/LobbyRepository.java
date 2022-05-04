@@ -25,8 +25,8 @@ public class LobbyRepository {
                 .put("lobbies", lobby.getId(), lobby)
                 .map(l -> lobby)
                 .publishOn(Schedulers.boundedElastic())
-                .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobby/" + l.getId(), l).subscribe())
-                .doOnNext(l -> this.reactiveRedisTemplate.convertAndSend("lobbies", l).subscribe())
+                .flatMap(l -> this.reactiveRedisTemplate.convertAndSend("lobby/" + l.getId(), l).thenReturn(l))
+                .flatMap(l -> this.reactiveRedisTemplate.convertAndSend("lobbies", l).thenReturn(l))
                 .log();
 
     }
