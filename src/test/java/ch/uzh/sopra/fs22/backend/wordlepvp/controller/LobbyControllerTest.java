@@ -1,25 +1,30 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.RedisConfig;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.LobbyService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
 import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.graphql.execution.ErrorType;
 import org.springframework.graphql.test.tester.GraphQlTester;
 import org.springframework.test.context.ActiveProfiles;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @GraphQlTest(LobbyController.class)
 //@ContextConfiguration()
 @ActiveProfiles("test")
 @DataRedisTest
-@Import({LobbyRepository.class})
+@Import({RedisConfig.class, LobbyRepository.class})
 //@AutoConfigureTestEntityManager
 public class LobbyControllerTest {
 
@@ -108,15 +113,15 @@ public class LobbyControllerTest {
                 .verifyComplete();
     }*/
 
-/*    @Test
+    @Test
     void getLobbies() {
         this.graphQlTester.document("query { getLobbies }")
                 .execute()
                 .errors()
                 .satisfy(errors -> assertThat(errors).hasSize(0));
-    }*/
+    }
 
-/*    @Test
+    @Test
     void anonymousThenUnauthorized() {
         this.graphQlTester.document("query { getLobbies }")
                 .execute()
@@ -125,23 +130,23 @@ public class LobbyControllerTest {
                     assertThat(errors).hasSize(1);
                     assertThat(errors.get(0).getErrorType()).isEqualTo(ErrorType.UNAUTHORIZED);
                 });
-    }*/
+    }
 
-//    @Test
-//    void authHeaderPresentSuccess() {
-//        this.graphQlTester.document("query { getLobbies }")
-//                .execute()
-//                .errors()
-//                .satisfy(errors -> {
-//                    assertThat(errors).hasSize(1);
-//                    assertThat(errors.get(0).getErrorType()).isEqualTo(ErrorType.UNAUTHORIZED);
-//                });
-//
+    @Test
+    void authHeaderPresentSuccess() {
+        this.graphQlTester.document("query { getLobbies }")
+                .execute()
+                .errors()
+                .satisfy(errors -> {
+                    assertThat(errors).hasSize(1);
+                    assertThat(errors.get(0).getErrorType()).isEqualTo(ErrorType.UNAUTHORIZED);
+                });
+
 //        StepVerifier.create(result)
 //                .expectAccessibleContext()
 //                .contains("Authorization", "Bearer Toast")
 //                .then()
 //                .verifyComplete();
-//    }
+    }
 
 }

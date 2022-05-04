@@ -66,9 +66,10 @@ public class GameService {
     }
 
     public Flux<GameStatus> getGameStatus(Mono<Player> player) {
-
-        return player.map(Player::getId)
-                .flatMapMany(pid -> this.reactiveRedisTemplate.listenToChannel("gameSync/" + pid))
+        // FIXME: Use Game ID in the future
+        return player.map(Player::getLobbyId)
+                .zipWith(player, (lid, p) -> this.reactiveRedisTemplate.listenToChannel("gameSync/game/" + lid, "gameSync/player/" + p.getId()))
+                .flatMapMany(m -> m)
                 .map(ReactiveSubscription.Message::getMessage)
                 .log();
 
@@ -89,8 +90,9 @@ public class GameService {
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .zipWith(player)
+
                 .filter(t -> t.getT1().getGame().getGameStatus(t.getT2()) != GameStatus.GUESSING)
-                .switchIfEmpty(Mono.empty())
+//                .switchIfEmpty(Mono.empty())
                 .flatMap(t -> {
                     // OWNER INIT
                     if (t.getT1().getOwner().getId().equals(t.getT2().getId()) &&

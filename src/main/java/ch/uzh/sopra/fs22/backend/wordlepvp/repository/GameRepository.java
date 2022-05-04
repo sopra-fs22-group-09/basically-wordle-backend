@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Set;
+
 @Component
 public class GameRepository {
 
@@ -25,9 +27,10 @@ public class GameRepository {
         return this.reactiveGameRedisTemplate.<String, Game>opsForHash()
                 .put("games", game.getId(), game)
                 .map(g -> game)
-                .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + g.getId(), g).thenReturn(g))
-                // TODO: Remove bloody subscribe!
-                .doOnNext(g -> g.getPlayers().forEach(p -> broadcastGameStatus(p, g.getGameStatus(p)).subscribe())).thenReturn(game)
+                .flatMapIterable(Game::getPlayers)
+                .map(p -> Mono.defer(() -> this.broadcastGameStatusSingle(p.getId(), game.getGameStatus(p))))
+                .collectList()
+                .thenReturn(game)
                 .log();
     }
 
@@ -50,7 +53,11 @@ public class GameRepository {
                 .log();
     }
 
-    private Mono<Long> broadcastGameStatus(Player player, GameStatus status) {
-        return this.reactiveGameStatusRedisTemplate.convertAndSend("gameSync/" + player.getId(), status);
+    public Mono<Long> broadcastGameStatusSingle(String playerId, GameStatus status) {
+        return this.reactiveGameStatusRedisTemplate.convertAndSend("gameSync/player/" + playerId, status);
+    }
+
+    private Mono<Long> broadcastGameStatus(Game game, GameStatus status) {
+        return this.reactiveGameStatusRedisTemplate.convertAndSend("gameSync/game/" + game.getId(), status);
     }
 }
