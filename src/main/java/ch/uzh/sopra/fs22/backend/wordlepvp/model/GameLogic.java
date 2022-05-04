@@ -19,7 +19,7 @@ public abstract class GameLogic implements Game, Serializable {
 
     private String[] repoWords;
     private String[] targetWords;
-    private Map<Player, GameRound> game;
+    private Map<Player, GameRound> game = new HashMap<>();
     private Map<Player, GameStatus> currentGameStatus = new HashMap<>();
 
     @Override
@@ -86,7 +86,7 @@ public abstract class GameLogic implements Game, Serializable {
 
     @Override
     public GameRound[] getCurrentOpponentGameRounds(Player player) {
-        Map<Player, GameRound> tmpGame = game;
+        Map<Player, GameRound> tmpGame = new HashMap<>(Map.copyOf(game));
         tmpGame.remove(player);
         return tmpGame.values().toArray(new GameRound[0]);
     }

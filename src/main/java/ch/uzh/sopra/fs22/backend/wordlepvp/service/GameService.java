@@ -79,6 +79,7 @@ public class GameService {
         return player.map(Player::getLobbyId)
                 .flatMapMany(this.gameRepository::getGameStream)
                 .zipWith(player, Game::getCurrentOpponentGameRounds)
+                .repeat(() -> true)
                 .log();
 
     }
@@ -109,8 +110,8 @@ public class GameService {
 //                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
 //                        "There is currently no sync in progress for this lobby.")))
 //                .doOnNext(t -> t.getT1().getGame().setGameStatus(t.getT2(), GameStatus.GUESSING))
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "You are not currently in a lobby.")))
+//                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+//                        "You are not currently in a lobby.")))
                 .flatMap(lp -> Mono.defer(() -> this.lobbyRepository.saveLobby(lp.getT1())))
                 .flatMap(l -> l.getPlayers().stream().anyMatch(p -> l.getGame().getGameStatus(p).equals(GameStatus.SYNCING)) ?
                         // TODO: Selectively notify players!
