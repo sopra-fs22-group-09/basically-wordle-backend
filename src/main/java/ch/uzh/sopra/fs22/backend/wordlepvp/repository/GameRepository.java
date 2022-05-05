@@ -2,14 +2,11 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStatus;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Set;
 
 @Component
 public class GameRepository {
@@ -28,9 +25,13 @@ public class GameRepository {
                 .put("games", game.getId(), game)
                 .map(g -> game)
                 .flatMapIterable(Game::getPlayers)
-                .map(p -> Mono.defer(() -> this.broadcastGameStatusSingle(p.getId(), game.getGameStatus(p))))
-                .collectList()
+                .all(p -> game.getGameStatus(p) == GameStatus.GUESSING)
+                .flatMap(p -> p ? Mono.defer(() -> this.broadcastGameStatus(game, GameStatus.GUESSING)) : Mono.empty())
                 .thenReturn(game)
+                .flatMapIterable(Game::getPlayers)
+                .filter(p -> game.getGameStatus(p) != GameStatus.GUESSING)
+                .flatMap(p -> Mono.defer(() -> this.broadcastGameStatus(game, game.getGameStatus(p))))
+                .then(Mono.just(game))
                 .log();
     }
 

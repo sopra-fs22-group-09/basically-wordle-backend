@@ -71,6 +71,9 @@ public class GameService {
                 .zipWith(player, (lid, p) -> this.reactiveRedisTemplate.listenToChannel("gameSync/game/" + lid, "gameSync/player/" + p.getId()))
                 .flatMapMany(m -> m)
                 .map(ReactiveSubscription.Message::getMessage)
+                .distinctUntilChanged()
+                // Reset after round concludes!
+//                .distinct()
                 .log();
 
     }
@@ -90,9 +93,7 @@ public class GameService {
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .zipWith(player)
-
                 .filter(t -> t.getT1().getGame().getGameStatus(t.getT2()) != GameStatus.GUESSING)
-//                .switchIfEmpty(Mono.empty())
                 .flatMap(t -> {
                     // OWNER INIT
                     if (t.getT1().getOwner().getId().equals(t.getT2().getId()) &&
@@ -101,30 +102,23 @@ public class GameService {
                         return Mono.defer(() -> Mono.just(t));
                     }
                     if (t.getT1().getGame().getGameStatus(t.getT2()) == GameStatus.SYNCING) {
-                        // TODO: Should this be waiting?
                         t.getT1().getGame().setGameStatus(t.getT2(), GameStatus.GUESSING);
                         return Mono.defer(() -> Mono.just(t));
                     }
                     return Mono.defer(Mono::empty);
                 })
-                //.doOnNext(t -> t.getT1().getPlayers().forEach(p -> System.out.println("PLAYER: " + t.getT2().getName() + ", Status: " + t.getT1().getGame().getGameStatus(p))))
                 .log()
 //                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
 //                        "There is currently no sync in progress for this lobby.")))
-//                .doOnNext(t -> t.getT1().getGame().setGameStatus(t.getT2(), GameStatus.GUESSING))
 //                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
 //                        "You are not currently in a lobby.")))
-                .flatMap(lp -> Mono.defer(() -> this.lobbyRepository.saveLobby(lp.getT1())))
-                .flatMap(l -> l.getPlayers().stream().anyMatch(p -> l.getGame().getGameStatus(p).equals(GameStatus.SYNCING)) ?
-                        // TODO: Selectively notify players!
-//                        this.reactiveRedisTemplate.convertAndSend("gameSync/" + l.getGame().getId(),
-//                                GameStatus.SYNCING).then(Mono.empty())
+                .flatMap(lp -> this.lobbyRepository.saveLobby(lp.getT1()))
+                .flatMap(l -> l.getPlayers().stream().anyMatch(p -> l.getGame().getGameStatus(p) == GameStatus.SYNCING) ?
+                        // TODO: Selectively notify players?
                         this.gameRepository.saveGame(l.getGame())
                         :
-                        Mono.just(l))
-//                .doOnNext(l -> l.getPlayers().forEach(p -> l.getGame().setGameStatus(p, GameStatus.GUESSING)))
-                .flatMap(l -> initializeGame(player))
-                //.doOnNext(t -> System.out.println("Game: " + t.playersSynced()))
+                        initializeGame(player)
+                )
                 .onErrorMap(e -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "Something went terribly wrong."))
                 .log();
