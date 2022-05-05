@@ -4,6 +4,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.util.GameTimerTask;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -14,6 +15,8 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.*;
+
 @Service
 @Transactional
 public class GameService {
@@ -21,15 +24,14 @@ public class GameService {
     private final GameRepository gameRepository;
     private final LobbyRepository lobbyRepository;
     private final WordsRepository wordsRepository;
-
-    private final ReactiveRedisTemplate<String, GameStatus> reactiveRedisTemplate;
+    private final Map<Game, Timer> gameTimers;
 
     @Autowired
-    public GameService(GameRepository gameRepository, LobbyRepository lobbyRepository, WordsRepository wordsRepository, ReactiveRedisTemplate<String, GameStatus> reactiveRedisTemplate) {
+    public GameService(GameRepository gameRepository, LobbyRepository lobbyRepository, WordsRepository wordsRepository) {
         this.gameRepository = gameRepository;
         this.lobbyRepository = lobbyRepository;
         this.wordsRepository = wordsRepository;
-        this.reactiveRedisTemplate = reactiveRedisTemplate;
+        this.gameTimers = new HashMap<>();
     }
 
     public Mono<Game> initializeGame(Mono<Player> player) {
@@ -37,8 +39,13 @@ public class GameService {
         return player.map(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .map(l -> l.getGame().start(l.getPlayers(), this.wordsRepository.getRandomWords(250)))
+                .map(g -> {
+                    Timer gameTimer = new Timer();
+                    gameTimer.schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
+                    this.gameTimers.put(g, gameTimer);
+                    return g;
+                })
                 .flatMap(this.gameRepository::saveGame)
-//                .flatMap(g -> this.reactiveRedisTemplate.convertAndSend("gameSync/" + g.getId(), GameStatus.GUESSING).thenReturn(g))
                 .log();
 
     }
@@ -49,6 +56,16 @@ public class GameService {
                 .flatMap(this.gameRepository::getGame)
                 .zipWith(player, (g, p) -> {
                     GameRound gr = g.guess(p, word);
+                    if (gr.getFinish() != 0L) {
+                        if (g.getPlayers().stream().allMatch(players -> g.getGameStatus(players).equals(GameStatus.WAITING))) {
+                            gr = g.endRound();
+                            this.gameTimers.get(g).cancel();
+                            this.gameTimers.get(g).purge();
+                            if (g.getPlayers().stream().noneMatch(players -> g.getGameStatus(players).equals(GameStatus.FINISHED))) {
+                                this.gameTimers.get(g).schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
+                            }
+                        }
+                    }
                     return this.gameRepository.saveGame(g).thenReturn(gr);
                 })
                 .flatMap(gameRound -> gameRound)
@@ -68,8 +85,7 @@ public class GameService {
     public Flux<GameStatus> getGameStatus(Mono<Player> player) {
 
         return player.map(Player::getId)
-                .flatMapMany(pid -> this.reactiveRedisTemplate.listenToChannel("gameSync/" + pid))
-                .map(ReactiveSubscription.Message::getMessage)
+                .flatMapMany(this.gameRepository::getGameStatusStream)
                 .log();
 
     }

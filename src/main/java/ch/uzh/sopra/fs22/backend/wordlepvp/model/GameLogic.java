@@ -12,10 +12,10 @@ import java.util.*;
 public abstract class GameLogic implements Game, Serializable {
 
     private String id;
-    private int amountRounds = 1;
+    private int amountRounds = 0;
     private int roundTime = 0;
-    //private int maxAmountRounds = 5;
-    //private int maxTimePerRound = 120;
+    private int maxRounds = 10;
+    private int maxTime = 180;
 
     private String[] repoWords;
     private String[] targetWords;
@@ -26,7 +26,11 @@ public abstract class GameLogic implements Game, Serializable {
     @Override
     public Game start(Set<Player> players, String[] repoWords) {
         this.repoWords = repoWords;
-        this.targetWords = new String[this.amountRounds];
+        if (this.maxRounds == 0) {
+            this.targetWords = new String[50];
+        } else {
+            this.targetWords = new String[this.amountRounds];
+        }
 
         Random r = new SecureRandom();
         Arrays.setAll(targetWords, word -> this.repoWords[r.nextInt(this.repoWords.length)]);
@@ -39,25 +43,42 @@ public abstract class GameLogic implements Game, Serializable {
 
     @Override
     public GameRound guess(Player player, String word) {
-
         GameRound currentGameRound = this.game.get(player).makeGuess(word);
         if (this.currentGameStatus.get(player).equals(GameStatus.WAITING)
                 || this.currentGameStatus.get(player).equals(GameStatus.FINISHED)) {
             return currentGameRound;
         }
         if (currentGameRound.getFinish() != 0L) {
-            this.currentGameStatus.put(player, GameStatus.WAITING);
-            if (this.currentGameStatus.entrySet().stream().allMatch(p -> p.getValue().equals(GameStatus.WAITING))) {
-                int nextRound = this.game.get(player).getCurrentRound() + 1;
-                if (nextRound < amountRounds) {
-                    this.game.forEach((p, g) -> this.saveStats(p));
-                    this.game.replaceAll((p, gr) -> new GameRound(p, nextRound, this.targetWords[nextRound]));
-                    this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);
-                    //currentGameRound = this.game.get(player); maybe need that the last guesser also gets updated to the new screen
-                } else {
-                    this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
+            if (this.maxRounds == 0) {
+                if (this.amountRounds == 0) {
+                    endRound();
                 }
+                int nextRound = currentGameRound.getCurrentRound() + 1;
+                this.game.put(player, new GameRound(player, nextRound, this.targetWords[nextRound]));
+            } else {
+                this.currentGameStatus.put(player, GameStatus.WAITING);
             }
+        }
+        return currentGameRound;
+    }
+
+    @Override
+    public GameRound endRound() {
+        currentGameStatus.replaceAll((p, gs) -> GameStatus.WAITING);
+        if (this.game.values().stream().findFirst().isEmpty()) {
+            return null;
+        }
+        GameRound currentGameRound = this.game.values().stream().findFirst().get();
+        int nextRound = currentGameRound.getCurrentRound() + 1;
+        if (this.maxRounds == 0) {
+            this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
+        } else if (nextRound < this.amountRounds) {
+            this.game.forEach((p, g) -> this.saveStats(p));
+            this.game.replaceAll((p, gr) -> new GameRound(p, nextRound, this.targetWords[nextRound]));
+            this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);
+            currentGameRound = this.game.get(currentGameRound.getPlayer()); //maybe need that the last guesser also gets updated to the new screen
+        } else {
+            this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
         }
         return currentGameRound;
     }
@@ -99,6 +120,10 @@ public abstract class GameLogic implements Game, Serializable {
     }
 
     private void saveStats(Player player) {
-        // save overall stats
+        GameStats roundStats = this.game.get(player).getGameStats();
+        GameStats gameStats = this.gameStats.get(player);
+        gameStats.setTimeTaken(gameStats.getTimeTaken() + roundStats.getTimeTaken());
+        gameStats.setScore(gameStats.getScore() + roundStats.getScore());
+        this.gameStats.put(player, gameStats);
     }
 }

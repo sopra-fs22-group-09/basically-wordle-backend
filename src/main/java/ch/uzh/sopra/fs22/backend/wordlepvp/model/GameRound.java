@@ -22,7 +22,6 @@ public class GameRound implements Serializable {
     private long finish;
 
     public GameRound makeGuess(String word) {
-
         if (this.finish != 0L) {
             return this;
         }
