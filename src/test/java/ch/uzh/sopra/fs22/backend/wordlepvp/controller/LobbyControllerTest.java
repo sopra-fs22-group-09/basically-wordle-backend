@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 //@ContextConfiguration()
 @ActiveProfiles("test")
 //@DataRedisTest
-@Import({LobbyRepository.class, HeaderInterceptorTest.class})
+@Import(LobbyRepository.class)//, HeaderInterceptorTest.class})
 //@AutoConfigureTestEntityManager
 public class LobbyControllerTest {
 
