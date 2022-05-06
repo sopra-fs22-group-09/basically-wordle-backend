@@ -24,6 +24,7 @@ public class GameRepository {
         return this.reactiveGameRedisTemplate.<String, Game>opsForHash()
                 .put("games", game.getId(), game)
                 .map(g -> game)
+                .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + g.getId(), g).thenReturn(g))
                 .flatMapIterable(Game::getPlayers)
                 .all(p -> game.getGameStatus(p) == GameStatus.GUESSING)
                 .flatMap(p -> p ? Mono.defer(() -> this.broadcastGameStatus(game, GameStatus.GUESSING)) : Mono.empty())
