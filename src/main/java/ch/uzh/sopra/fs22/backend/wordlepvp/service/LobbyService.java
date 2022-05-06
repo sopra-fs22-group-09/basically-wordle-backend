@@ -32,7 +32,7 @@ public class LobbyService {
     public Mono<Lobby> initializeLobby(LobbyInput input, Mono<Player> player) {
 
         if (input.getSize() > input.getGameCategory().getMaxGameSize()) {
-            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Lobby size is too big.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby size is too big.");
         }
 
         return player.publishOn(Schedulers.boundedElastic()).map(p -> {
@@ -58,7 +58,16 @@ public class LobbyService {
 
         return this.lobbyRepository.getLobby(id)
                 .zipWith(player, (l, p) -> {
+                    if (l.getStatus().equals(LobbyStatus.FULL)) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby is already full.");
+                    }
+                    if (l.getStatus().equals(LobbyStatus.INGAME)) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby is already in game.");
+                    }
                     l.getPlayers().add(p);
+                    if (l.getPlayers().size() >= l.getSize()) {
+                        l.setStatus(LobbyStatus.FULL);
+                    }
                     return l;
                 })
                 .flatMap(this.lobbyRepository::saveLobby)
@@ -75,7 +84,7 @@ public class LobbyService {
                         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to change settings!");
                     }
                     if (GameCategory.valueOf(input.getGameMode().getCategory()) != l.getGameCategory()) {
-                        throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "GameMode is not supported by current GameCategory!");
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "GameMode is not supported by current GameCategory!");
                     }
                     return l;
                 })
@@ -85,6 +94,16 @@ public class LobbyService {
                         l.setGameMode(input.getGameMode());
                         l.setGame(this.createGame(l.getId(), l.getGameMode()));
                     } else {
+                        System.out.println("11111111111111 Rounds: " + input.getAmountRounds() + ", Time: " + input.getRoundTime() + ", maxRounds: " + l.getGame().getMaxRounds() + ", maxTime: " + l.getGame().getMaxTime());
+
+                        if (input.getAmountRounds() > l.getGame().getMaxRounds()) {
+                            input.setAmountRounds(l.getGame().getMaxRounds());
+                        }
+                        if (input.getRoundTime() > l.getGame().getMaxTime()) {
+                            input.setRoundTime(l.getGame().getMaxTime());
+                        }
+                        System.out.println("11111111111111 Rounds: " + input.getAmountRounds() + ", Time: " + input.getRoundTime() + ", maxRounds: " + l.getGame().getMaxRounds() + ", maxTime: " + l.getGame().getMaxTime());
+
                         l.getGame().setAmountRounds(input.getAmountRounds());
                         l.getGame().setRoundTime(input.getRoundTime());
                     }
@@ -104,6 +123,9 @@ public class LobbyService {
                         .publishOn(Schedulers.boundedElastic())
                         .zipWith(player, (l, p) -> {
                             l.getPlayers().remove(p);
+                            if (l.getStatus().equals(LobbyStatus.FULL)) {
+                                l.setStatus(LobbyStatus.OPEN);
+                            }
 
                             if (Objects.equals(l.getOwner().getId(), p.getId())
                                     && l.getPlayers().stream().findFirst().isPresent()) {

@@ -12,7 +12,6 @@ import reactor.core.publisher.Mono;
 public class GameRepository {
 
     private final ReactiveRedisTemplate<String, Game> reactiveGameRedisTemplate;
-
     private final ReactiveRedisTemplate<String, GameStatus> reactiveGameStatusRedisTemplate;
 
     public GameRepository(ReactiveRedisTemplate<String, Game> reactiveGameRedisTemplate, ReactiveRedisTemplate<String, GameStatus> reactiveGameStatusRedisTemplate) {
@@ -46,6 +45,12 @@ public class GameRepository {
     public Mono<Game> getGame(String id) {
         return this.reactiveGameRedisTemplate.<String, Game>opsForHash()
                 .get("games", id)
+                .log();
+    }
+
+    public Flux<GameStatus> getGameStatusStream(String pId) {
+        return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/" + pId)
+                .map(ReactiveSubscription.Message::getMessage)
                 .log();
     }
 
