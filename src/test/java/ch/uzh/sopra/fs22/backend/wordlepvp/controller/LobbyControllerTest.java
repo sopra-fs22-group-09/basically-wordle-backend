@@ -8,7 +8,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.LobbyService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
-import ch.uzh.sopra.fs22.backend.wordlepvp.util.HeaderInterceptorTest;
+//import ch.uzh.sopra.fs22.backend.wordlepvp.util.HeaderInterceptorTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
