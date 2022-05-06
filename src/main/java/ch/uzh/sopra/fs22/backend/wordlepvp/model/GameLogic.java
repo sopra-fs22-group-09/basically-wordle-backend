@@ -44,6 +44,7 @@ public abstract class GameLogic implements Game, Serializable {
     @Override
     public GameRound guess(Player player, String word) {
         GameRound currentGameRound = this.game.get(player).makeGuess(word);
+        // FIXME: Handle NPE
         if (this.currentGameStatus.get(player).equals(GameStatus.WAITING)
                 || this.currentGameStatus.get(player).equals(GameStatus.FINISHED)) {
             return currentGameRound;

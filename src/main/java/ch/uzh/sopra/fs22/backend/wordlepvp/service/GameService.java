@@ -6,16 +6,18 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.GameTimerTask;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.ReactiveSubscription;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Timer;
 
 @Service
 @Transactional
@@ -38,7 +40,17 @@ public class GameService {
 
         return player.map(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
-                .map(l -> l.getGame().start(l.getPlayers(), this.wordsRepository.getRandomWords(250)))
+                .zipWith(player)
+                .filter(t -> t.getT1().getGameCategory() == GameCategory.SOLO
+                        && t.getT1().getGame().getGameStatus(t.getT2()) != GameStatus.GUESSING)
+                .doOnNext(t -> t.getT1().getGame().setGameStatus(t.getT2(), GameStatus.GUESSING))
+                .zipWhen(t -> this.gameRepository.saveGame(t.getT1().getGame()), (lp, p) -> lp)
+                .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT1()), (lp, p) -> lp)
+                .switchIfEmpty(player.map(Player::getLobbyId).flatMap(this.lobbyRepository::getLobby).zipWith(player))
+//                .then(player)
+//                .flatMap(l -> this.lobbyRepository.getLobby(l.getLobbyId()))
+                .filter(t -> t.getT1().getGame().getGameStatus(t.getT2()) == GameStatus.GUESSING)
+                .map(l -> l.getT1().getGame().start(l.getT1().getPlayers(), this.wordsRepository.getRandomWords(250)))
                 .map(g -> {
                     Timer gameTimer = new Timer();
                     gameTimer.schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
@@ -84,7 +96,7 @@ public class GameService {
 
     public Flux<GameStatus> getGameStatus(Mono<Player> player) {
 
-        return player.map(Player::getId)
+        return player
                 .flatMapMany(this.gameRepository::getGameStatusStream)
                 .log();
 
@@ -104,6 +116,12 @@ public class GameService {
         //return this.initializeGame(player);
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
+                .filter(l -> l.getGameCategory() == GameCategory.SOLO)
+                .flatMap(l -> initializeGame(player))
+                .then(player)
+                .map(Player::getLobbyId)
+                .flatMap(this.lobbyRepository::getLobby)
+                .filter(l -> l.getGameCategory() != GameCategory.SOLO)
                 .zipWith(player)
                 .filter(t -> t.getT1().getGame().getGameStatus(t.getT2()) != GameStatus.GUESSING)
                 .flatMap(t -> {
@@ -119,7 +137,6 @@ public class GameService {
                     }
                     return Mono.defer(Mono::empty);
                 })
-                .log()
 //                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
 //                        "There is currently no sync in progress for this lobby.")))
 //                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -131,6 +148,7 @@ public class GameService {
                         :
                         initializeGame(player)
                 )
+                .switchIfEmpty(player.map(Player::getLobbyId).flatMap(this.lobbyRepository::getLobby).map(Lobby::getGame))
                 .onErrorMap(e -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "Something went terribly wrong."))
                 .log();

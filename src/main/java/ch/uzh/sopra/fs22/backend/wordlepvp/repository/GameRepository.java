@@ -2,6 +2,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStatus;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -48,9 +49,13 @@ public class GameRepository {
                 .log();
     }
 
-    public Flux<GameStatus> getGameStatusStream(String pId) {
-        return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/" + pId)
+    public Flux<GameStatus> getGameStatusStream(Player player) {
+        // FIXME: Use Game ID in the future
+        return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/game/" + player.getLobbyId(), "gameSync/player/" + player.getId())
                 .map(ReactiveSubscription.Message::getMessage)
+                .distinctUntilChanged()
+                // Reset after round concludes!
+//                .distinct()
                 .log();
     }
 
