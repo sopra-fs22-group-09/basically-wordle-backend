@@ -38,19 +38,15 @@ public class GameService {
 
     public Mono<Game> initializeGame(Mono<Player> player) {
 
-        return player.map(Player::getLobbyId)
-                .flatMap(this.lobbyRepository::getLobby)
-                .zipWith(player)
-                .filter(t -> t.getT1().getGameCategory() == GameCategory.SOLO
-                        && t.getT1().getGame().getGameStatus(t.getT2()) != GameStatus.GUESSING)
-                .doOnNext(t -> t.getT1().getGame().setGameStatus(t.getT2(), GameStatus.GUESSING))
-                .zipWhen(t -> this.gameRepository.saveGame(t.getT1().getGame()), (lp, p) -> lp)
-                .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT1()), (lp, p) -> lp)
-                .switchIfEmpty(player.map(Player::getLobbyId).flatMap(this.lobbyRepository::getLobby).zipWith(player))
-//                .then(player)
-//                .flatMap(l -> this.lobbyRepository.getLobby(l.getLobbyId()))
-                .filter(t -> t.getT1().getGame().getGameStatus(t.getT2()) == GameStatus.GUESSING)
-                .map(l -> l.getT1().getGame().start(l.getT1().getPlayers(), this.wordsRepository.getRandomWords(250)))
+        return player.zipWhen(p -> this.lobbyRepository.getLobby(p.getLobbyId()))
+                .filter(t -> t.getT2().getGameCategory() == GameCategory.SOLO
+                        && t.getT2().getGame().getGameStatus(t.getT1()) != GameStatus.GUESSING)
+                .doOnNext(t -> t.getT2().getGame().setGameStatus(t.getT1(), GameStatus.GUESSING))
+                .zipWhen(t -> this.gameRepository.saveGame(t.getT2().getGame()), (lp, p) -> lp)
+                .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT2()), (lp, p) -> lp)
+                .switchIfEmpty(player.zipWhen(p -> this.lobbyRepository.getLobby(p.getLobbyId())))
+                .filter(t -> t.getT2().getGame().getGameStatus(t.getT1()) == GameStatus.GUESSING)
+                .map(l -> l.getT2().getGame().start(l.getT2().getPlayers(), this.wordsRepository.getRandomWords(250)))
                 .map(g -> {
                     if (g.getMaxTime() == 0) {
                         return g;
@@ -116,7 +112,6 @@ public class GameService {
     }
 
     public Mono<Game> markStandBy(Mono<Player> player) {
-        //return this.initializeGame(player);
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .filter(l -> l.getGameCategory() == GameCategory.SOLO)
