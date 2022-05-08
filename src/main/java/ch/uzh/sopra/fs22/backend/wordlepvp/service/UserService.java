@@ -62,6 +62,28 @@ public class UserService {
         return this.userRepository.saveAndFlush(user);
     }
 
+    public User createGuest() {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[4];
+        random.nextBytes(bytes);
+        String emailUsername = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        String username = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes) + " (Guest)";
+        byte[] password = new byte[32];
+        random.nextBytes(password);
+        String passwordString = Base64.getUrlEncoder().withoutPadding().encodeToString(password);
+        String encodedPassword = encoder.encode(passwordString);
+        User user = User.builder()
+                    .username(username)
+                    .passwordHash(encodedPassword)
+                    .email(emailUsername + "@localhost.localhost")
+                    .activated(true)
+                    .build();
+
+        user.setStatus(UserStatus.ONLINE);
+        user.setGuest(true);
+        return this.userRepository.saveAndFlush(user);
+    }
+
     public User validateUser(LoginInput input) {
         boolean passwordValid = false;
         User userByUsername = userRepository.findByUsername(input.getUsername());

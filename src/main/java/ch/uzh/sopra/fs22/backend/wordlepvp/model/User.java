@@ -72,6 +72,9 @@ public class User extends BaseEntity implements Serializable {
     @Column(nullable = true)
     private String resetToken;
 
+    @Column
+    private boolean isGuest;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

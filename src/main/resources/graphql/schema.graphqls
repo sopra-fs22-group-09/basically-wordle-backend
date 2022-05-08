@@ -10,6 +10,7 @@ type Query {
 type Mutation {
     register(input: RegisterInput!): User
     login(input: LoginInput!): User
+    createGuest: User
     logout: Boolean!
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User

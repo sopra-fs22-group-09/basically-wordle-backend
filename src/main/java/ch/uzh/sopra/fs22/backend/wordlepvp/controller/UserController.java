@@ -48,4 +48,9 @@ public class UserController {
     @MutationMapping
     public boolean tutorialFinished(@ContextValue(name = "Authorization") String authHeader) {
         return this.userService.completeTutorial(AuthorizationHelper.extractAuthToken(authHeader));}
+
+    @MutationMapping
+    public User createGuest() {
+        return this.userService.createGuest();
+    }
 }

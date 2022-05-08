@@ -56,6 +56,8 @@ public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
                     user = oMapper.convertValue(map.get("register"), User.class);
                 } else if (map.containsKey("login")) {
                     user = oMapper.convertValue(map.get("login"), User.class);
+                } else if (map.containsKey("createGuest")) {
+                    user = oMapper.convertValue(map.get("createGuest"), User.class);
                 }
                 if (user == null) return response;
                 String bearerToken = this.userService.authorize(user);
