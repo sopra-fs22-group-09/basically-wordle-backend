@@ -61,6 +61,7 @@ spring:
   graphql:
     cors:
       allowed-origins: https://wordlepvp-frontend.oxv.io,https://www.oxv.io,https://oxv.io
+      allowed-origin-patterns: https://wordlepvp-frontend*.oxv.io
   sql:
     init:
       mode: always
