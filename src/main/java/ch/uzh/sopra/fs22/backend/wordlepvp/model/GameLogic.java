@@ -71,7 +71,9 @@ public abstract class GameLogic implements Game, Serializable {
         }
         GameRound currentGameRound = this.game.values().stream().findFirst().get();
         int nextRound = currentGameRound.getCurrentRound() + 1;
-        if (this.maxRounds == 0) {
+        if (this.maxTime == 0) {
+            this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);
+        } else if (this.maxRounds == 0) {
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
         } else if (nextRound < this.amountRounds) {
             this.game.forEach((p, g) -> this.saveStats(p));

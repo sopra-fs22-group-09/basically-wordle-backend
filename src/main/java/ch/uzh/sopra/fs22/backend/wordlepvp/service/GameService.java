@@ -52,7 +52,7 @@ public class GameService {
                 .filter(t -> t.getT1().getGame().getGameStatus(t.getT2()) == GameStatus.GUESSING)
                 .map(l -> l.getT1().getGame().start(l.getT1().getPlayers(), this.wordsRepository.getRandomWords(250)))
                 .map(g -> {
-                    if (g.getRoundTime() == 0) {
+                    if (g.getMaxTime() == 0) {
                         return g;
                     }
                     Timer gameTimer = new Timer();
