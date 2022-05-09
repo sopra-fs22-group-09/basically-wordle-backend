@@ -1,25 +1,39 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameCategory;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.LobbyService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
+//import ch.uzh.sopra.fs22.backend.wordlepvp.util.HeaderInterceptorTest;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
 import org.springframework.boot.test.autoconfigure.graphql.GraphQlTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.graphql.execution.ErrorType;
 import org.springframework.graphql.test.tester.GraphQlTester;
 import org.springframework.test.context.ActiveProfiles;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+import reactor.util.context.Context;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @GraphQlTest(LobbyController.class)
 //@ContextConfiguration()
 @ActiveProfiles("test")
-@DataRedisTest
-@Import({LobbyRepository.class})
+//@DataRedisTest
+@Import(LobbyRepository.class)//, HeaderInterceptorTest.class})
 //@AutoConfigureTestEntityManager
 public class LobbyControllerTest {
 
@@ -108,7 +122,7 @@ public class LobbyControllerTest {
                 .verifyComplete();
     }*/
 
-/*    @Test
+    /*@Test
     void getLobbies() {
         this.graphQlTester.document("query { getLobbies }")
                 .execute()
@@ -116,7 +130,7 @@ public class LobbyControllerTest {
                 .satisfy(errors -> assertThat(errors).hasSize(0));
     }*/
 
-/*    @Test
+    /*@Test
     void anonymousThenUnauthorized() {
         this.graphQlTester.document("query { getLobbies }")
                 .execute()
@@ -127,21 +141,10 @@ public class LobbyControllerTest {
                 });
     }*/
 
-//    @Test
-//    void authHeaderPresentSuccess() {
-//        this.graphQlTester.document("query { getLobbies }")
-//                .execute()
-//                .errors()
-//                .satisfy(errors -> {
-//                    assertThat(errors).hasSize(1);
-//                    assertThat(errors.get(0).getErrorType()).isEqualTo(ErrorType.UNAUTHORIZED);
-//                });
-//
 //        StepVerifier.create(result)
 //                .expectAccessibleContext()
 //                .contains("Authorization", "Bearer Toast")
 //                .then()
 //                .verifyComplete();
-//    }
 
 }

@@ -6,16 +6,18 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.GameTimerTask;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.ReactiveSubscription;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Timer;
 
 @Service
 @Transactional
@@ -38,8 +40,21 @@ public class GameService {
 
         return player.map(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
-                .map(l -> l.getGame().start(l.getPlayers(), this.wordsRepository.getRandomWords(250)))
+                .zipWith(player)
+                .filter(t -> t.getT1().getGameCategory() == GameCategory.SOLO
+                        && t.getT1().getGame().getGameStatus(t.getT2()) != GameStatus.GUESSING)
+                .doOnNext(t -> t.getT1().getGame().setGameStatus(t.getT2(), GameStatus.GUESSING))
+                .zipWhen(t -> this.gameRepository.saveGame(t.getT1().getGame()), (lp, p) -> lp)
+                .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT1()), (lp, p) -> lp)
+                .switchIfEmpty(player.map(Player::getLobbyId).flatMap(this.lobbyRepository::getLobby).zipWith(player))
+//                .then(player)
+//                .flatMap(l -> this.lobbyRepository.getLobby(l.getLobbyId()))
+                .filter(t -> t.getT1().getGame().getGameStatus(t.getT2()) == GameStatus.GUESSING)
+                .map(l -> l.getT1().getGame().start(l.getT1().getPlayers(), this.wordsRepository.getRandomWords(250)))
                 .map(g -> {
+                    if (g.getMaxTime() == 0) {
+                        return g;
+                    }
                     Timer gameTimer = new Timer();
                     gameTimer.schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
                     this.gameTimers.put(g, gameTimer);
@@ -84,7 +99,7 @@ public class GameService {
 
     public Flux<GameStatus> getGameStatus(Mono<Player> player) {
 
-        return player.map(Player::getId)
+        return player
                 .flatMapMany(this.gameRepository::getGameStatusStream)
                 .log();
 
@@ -104,9 +119,14 @@ public class GameService {
         //return this.initializeGame(player);
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
+                .filter(l -> l.getGameCategory() == GameCategory.SOLO)
+                .flatMap(l -> initializeGame(player))
+                .then(player)
+                .map(Player::getLobbyId)
+                .flatMap(this.lobbyRepository::getLobby)
+                .filter(l -> l.getGameCategory() != GameCategory.SOLO)
                 .zipWith(player)
                 .filter(t -> t.getT1().getGame().getGameStatus(t.getT2()) != GameStatus.GUESSING)
-                .switchIfEmpty(Mono.empty())
                 .flatMap(t -> {
                     // OWNER INIT
                     if (t.getT1().getOwner().getId().equals(t.getT2().getId()) &&
@@ -115,30 +135,23 @@ public class GameService {
                         return Mono.defer(() -> Mono.just(t));
                     }
                     if (t.getT1().getGame().getGameStatus(t.getT2()) == GameStatus.SYNCING) {
-                        // TODO: Should this be waiting?
                         t.getT1().getGame().setGameStatus(t.getT2(), GameStatus.GUESSING);
                         return Mono.defer(() -> Mono.just(t));
                     }
                     return Mono.defer(Mono::empty);
                 })
-                //.doOnNext(t -> t.getT1().getPlayers().forEach(p -> System.out.println("PLAYER: " + t.getT2().getName() + ", Status: " + t.getT1().getGame().getGameStatus(p))))
-                .log()
 //                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
 //                        "There is currently no sync in progress for this lobby.")))
-//                .doOnNext(t -> t.getT1().getGame().setGameStatus(t.getT2(), GameStatus.GUESSING))
 //                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
 //                        "You are not currently in a lobby.")))
-                .flatMap(lp -> Mono.defer(() -> this.lobbyRepository.saveLobby(lp.getT1())))
-                .flatMap(l -> l.getPlayers().stream().anyMatch(p -> l.getGame().getGameStatus(p).equals(GameStatus.SYNCING)) ?
-                        // TODO: Selectively notify players!
-//                        this.reactiveRedisTemplate.convertAndSend("gameSync/" + l.getGame().getId(),
-//                                GameStatus.SYNCING).then(Mono.empty())
+                .flatMap(lp -> this.lobbyRepository.saveLobby(lp.getT1()))
+                .flatMap(l -> l.getPlayers().stream().anyMatch(p -> l.getGame().getGameStatus(p) == GameStatus.SYNCING) ?
+                        // TODO: Selectively notify players?
                         this.gameRepository.saveGame(l.getGame())
                         :
-                        Mono.just(l))
-//                .doOnNext(l -> l.getPlayers().forEach(p -> l.getGame().setGameStatus(p, GameStatus.GUESSING)))
-                .flatMap(l -> initializeGame(player))
-                //.doOnNext(t -> System.out.println("Game: " + t.playersSynced()))
+                        initializeGame(player)
+                )
+                .switchIfEmpty(player.map(Player::getLobbyId).flatMap(this.lobbyRepository::getLobby).map(Lobby::getGame))
                 .onErrorMap(e -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "Something went terribly wrong."))
                 .log();

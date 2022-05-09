@@ -151,19 +151,6 @@ public class UserService {
         return true;
     }
 
-//    public Mono<User> getFromToken(String token) {
-//        Mono<User> user;
-//        try {
-//            user = Mono.justOrEmpty(userRepository.findById(authRepository.getUserID(token)));
-////            if (user.isEmpty()) {
-////                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
-////            }
-//        } catch (IllegalArgumentException ignored) {
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fatal error: User could not be logged out. Try to sign in and out again.");
-//        }
-//        return user;
-//    }
-
     private void validateNewPassword(String newPassword) {
         boolean digit = false;
         boolean uppercase = false;
