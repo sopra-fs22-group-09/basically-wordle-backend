@@ -2,6 +2,7 @@
 type Query {
     getLobbies: [Lobby]
     profileByUserId(id: ID!): User
+    friends(status: UserStatus): [User]!
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
@@ -14,6 +15,7 @@ type Mutation {
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
     #updateUserProfile(input: UserSettingsInput!): User
+    addFriend(friendId: ID!): Boolean
     tutorialFinished: Boolean!
 
     createLobby(input: LobbyInput!): Lobby
@@ -146,7 +148,10 @@ type Message {
 #--------------------------------------------------
 enum UserStatus {
     ONLINE
+    CREATINGLOBBY
+    INGAME
     AWAY
+    OFFLINE
 }
 enum GameCategory {
     PVP

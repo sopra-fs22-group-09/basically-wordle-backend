@@ -20,9 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Transactional
@@ -172,5 +170,31 @@ public class UserService {
         }
         if (!(digit && uppercase && lowercase && specialCharacters))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password does not meet minimum password criteria.");
+    }
+
+    public boolean addFriend(String friendId, String token) {
+        if (friendId == null || friendId.isEmpty())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No friendId provided.");
+        User user = getFromToken(token);
+        Optional<User> friendToAdd;
+        try {
+            friendToAdd = this.userRepository.findById(UUID.fromString(friendId));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The given friendId is invalid.");
+        }
+
+        if (friendToAdd.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The given friendId is invalid.");
+
+        if (friendToAdd.get().equals(user)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "We already established that you have no friends.");
+
+        user.getFriends().add(friendToAdd.get());
+        this.userRepository.saveAndFlush(user);
+        return true;
+    }
+
+    public List<User> friends(UserStatus status, String token) {
+        User user = getFromToken(token);
+
+        return this.userRepository.findFriendsByIdAndStatus(user.getId(), status);
     }
 }
