@@ -42,6 +42,12 @@ public class LobbyController {
     }
 
     @MutationMapping
+    public Mono<Lobby> guestJoinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.lobbyService.addPlayerToLobby(id, player);
+    }
+
+    @MutationMapping
     public Mono<Lobby> updateLobbySettings(@Argument @Valid GameSettingsInput input, @ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.lobbyService.changeLobby(input, player);
