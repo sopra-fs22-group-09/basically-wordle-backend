@@ -37,6 +37,7 @@ type Subscription {
     #lobbyList: [Lobby]
     lobby: Lobby
     lobbyInvites: LobbyInvite
+    friendsUpdates: User!
     #lobbyChat: Message
 
     #friendStatus: User # I suggest we use player (and thus add status to the player..)

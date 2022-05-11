@@ -3,6 +3,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.UserStatus;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.AuthRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.FriendsRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
@@ -18,6 +19,7 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 
 import java.security.SecureRandom;
 import java.util.*;
@@ -27,6 +29,7 @@ import java.util.*;
 public class UserService {
     private final Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
+    private final FriendsRepository friendsRepository;
     private final AuthRepository authRepository;
     private final Argon2PasswordEncoder encoder = new Argon2PasswordEncoder();
     private final EmailService emailService;
@@ -35,8 +38,9 @@ public class UserService {
     private String activeProfile;
 
     @Autowired
-    public UserService(@Qualifier("userRepository") UserRepository userRepository, AuthRepository authRepository, EmailService emailService) {
+    public UserService(@Qualifier("userRepository") UserRepository userRepository, FriendsRepository friendsRepository, AuthRepository authRepository, EmailService emailService) {
         this.userRepository = userRepository;
+        this.friendsRepository = friendsRepository;
         this.authRepository = authRepository;
         this.emailService = emailService;
     }
@@ -95,6 +99,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The username and password combination does not exist.");
 
         userByUsername.setStatus(UserStatus.ONLINE);
+        this.friendsRepository.broadcastFriendsEvent(userByUsername).subscribe();
         return userByUsername;
     }
 
@@ -102,6 +107,7 @@ public class UserService {
         User user = getFromToken(token);
         user.setStatus(UserStatus.OFFLINE);
         authRepository.expire(token);
+        this.friendsRepository.broadcastFriendsEvent(user).subscribe();
         return true;
     }
 
@@ -195,9 +201,11 @@ public class UserService {
         if (friendToAdd.get().equals(user)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "We already established that you have no friends.");
 
         // TODO: Notify other user that we're now friends.
+        // FIXME: Handle edge cases
         user.getFriends().add(friendToAdd.get());
         friendToAdd.get().getFriends().add(user);
         this.userRepository.saveAndFlush(user);
+        this.friendsRepository.broadcastFriendsEvent(user).subscribe();
         return true;
     }
 
@@ -214,5 +222,14 @@ public class UserService {
         if (foundUser.isEmpty()) return;
         foundUser.get().setStatus(status);
         this.userRepository.saveAndFlush(foundUser.get());
+        this.friendsRepository.broadcastFriendsEvent(foundUser.get()).subscribe();
+    }
+
+    public Flux<User> getFriendsUpdates(String token) {
+        User user = getFromToken(token);
+        if (user != null)
+            return this.friendsRepository.getFriendsStream(user);
+        else
+            return Flux.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not authorized to subscribe here!"));
     }
 }
