@@ -41,9 +41,9 @@ public class UserService {
         this.emailService = emailService;
     }
 
-    public Optional<User> findById(String userId) {
+    public Optional<User> findById(UUID userId) {
         try {
-            return this.userRepository.findById(UUID.fromString(userId));
+            return this.userRepository.findById(userId);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid UUID.");
         }
@@ -194,6 +194,7 @@ public class UserService {
 
         if (friendToAdd.get().equals(user)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "We already established that you have no friends.");
 
+        // TODO: Notify other user that we're now friends.
         user.getFriends().add(friendToAdd.get());
         friendToAdd.get().getFriends().add(user);
         this.userRepository.saveAndFlush(user);
@@ -206,5 +207,12 @@ public class UserService {
 
     public List<User> friends(User user) {
         return this.userRepository.findAllFriendsById(user.getId());
+    }
+
+    public void setUserStatus(UUID userId, UserStatus status) {
+        Optional<User> foundUser = findById(userId);
+        if (foundUser.isEmpty()) return;
+        foundUser.get().setStatus(status);
+        this.userRepository.saveAndFlush(foundUser.get());
     }
 }

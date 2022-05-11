@@ -16,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import javax.validation.Valid;
 import java.util.Optional;
@@ -45,7 +46,11 @@ public class LobbyController {
     @MutationMapping
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        Mono<Player> player = this.playerService.createPlayer(user, id);
+        // TODO: In lobby?
+        ;
+        Mono<Player> player = this.playerService.createPlayer(user, id)
+                .publishOn(Schedulers.boundedElastic())
+                .doFirst(() -> this.userService.setUserStatus(user.getId(), UserStatus.INGAME));
         return this.lobbyService.addPlayerToLobby(id, player);
     }
 
@@ -73,8 +78,11 @@ public class LobbyController {
 
     @SubscriptionMapping
     public Flux<Lobby> lobby(@ContextValue("Authorization") String authHeader) {
-        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.lobbyService.subscribeLobby(player);
+        String token = AuthorizationHelper.extractAuthToken(authHeader);
+        Mono<Player> player = this.playerService.getFromToken(token);
+        return this.lobbyService.subscribeLobby(player)
+                .publishOn(Schedulers.boundedElastic())
+                .doFinally(ignored -> this.userService.setUserStatus(this.userService.getFromToken(token).getId(), UserStatus.ONLINE));
     }
 
     @SubscriptionMapping

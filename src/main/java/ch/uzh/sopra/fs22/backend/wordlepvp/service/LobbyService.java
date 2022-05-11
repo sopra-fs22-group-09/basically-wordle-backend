@@ -115,7 +115,7 @@ public class LobbyService {
     }
 
     public Flux<Lobby> subscribeLobby(Mono<Player> player) {
-
+        // TODO: Rewrite this!
         return player.map(Player::getLobbyId)
                 .flatMapMany(this.lobbyRepository::getLobbyStream)
                 .publishOn(Schedulers.boundedElastic())
