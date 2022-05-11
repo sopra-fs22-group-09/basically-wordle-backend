@@ -27,9 +27,15 @@ public class UserController {
     }
 
     @QueryMapping
-    public List<User> friends(@Argument @Valid UserStatus status, @ContextValue(name = "Authorization") String authHeader) {
-        String token = AuthorizationHelper.extractAuthToken(authHeader);
-        return this.userService.friends(status, token);
+    public List<User> friendsByStatus(@Argument @Valid UserStatus status, @ContextValue(name = "Authorization") String authHeader) {
+        User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.userService.friends(status, user);
+    }
+
+    @QueryMapping
+    public List<User> allFriends(@ContextValue(name = "Authorization") String authHeader) {
+        User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.userService.friends(user);
     }
 
     @MutationMapping
@@ -59,11 +65,17 @@ public class UserController {
 
     @MutationMapping
     public boolean addFriend(@Argument @Valid String friendId, @ContextValue(name = "Authorization") String authHeader) {
-        String token = AuthorizationHelper.extractAuthToken(authHeader);
-        return this.userService.addFriend(friendId, token);
+        User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.userService.addFriend(friendId, user);
     }
 
     @MutationMapping
     public boolean tutorialFinished(@ContextValue(name = "Authorization") String authHeader) {
-        return this.userService.completeTutorial(AuthorizationHelper.extractAuthToken(authHeader));}
+        return this.userService.completeTutorial(AuthorizationHelper.extractAuthToken(authHeader));
+    }
+
+//    @SubscriptionMapping
+//    public Flux<FriendInvite> friendRequests(@ContextValue(name = "Authorization") String authHeader) {
+//        return this.userService.receiveFriendRequests(AuthorizationHelper.extractAuthToken(authHeader));
+//    }
 }

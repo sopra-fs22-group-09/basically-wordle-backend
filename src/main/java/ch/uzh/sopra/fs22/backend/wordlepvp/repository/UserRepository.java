@@ -14,7 +14,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     User findByUsername(String username);
     User findByEmail(String email);
     User findByResetToken(String resetToken);
-    List<User> findFriendsById(UUID id);
-    @Query("select u.friends from User u where u.id = ?1 and u.status = ?2")
+    @Query("select u.friends from User u where u.id = ?1")
+    List<User> findAllFriendsById(UUID id);
+    @Query("select u.friends, f from User u, User f where f member u.friends and u.id = ?1 and f.status = ?2")
     List<User> findFriendsByIdAndStatus(UUID id, UserStatus status);
 }

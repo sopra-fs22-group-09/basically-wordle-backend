@@ -159,4 +159,18 @@ public class LobbyService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
         }
     }
+
+    public Flux<LobbyInvite> receiveLobbyInvites(User user) {
+        return this.lobbyRepository.getInvitesStream(user);
+    }
+
+    public Mono<Boolean> sendLobbyInvite(String lobbyId, User recipient, User sender) {
+        LobbyInvite invite = LobbyInvite.builder()
+                .id(UUID.randomUUID().toString())
+                .lobbyId(lobbyId)
+                .senderId(sender.getId().toString())
+                .recipientId(recipient.getId().toString())
+                .build();
+        return this.lobbyRepository.inviteToLobby(invite);
+    }
 }

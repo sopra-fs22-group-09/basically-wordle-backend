@@ -5,24 +5,24 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.annotation.Version;
 
 import java.io.Serializable;
 
 @Data
 @Builder
-@RedisHash("players")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Player implements Serializable {
-
+public class LobbyInvite implements Serializable {
     @Id
     private String id;
 
-    private String name;
-
-    private String avatarID;
+    @Version
+    private int version;
 
     private String lobbyId;
 
+    private String senderId;
+
+    private String recipientId;
 }

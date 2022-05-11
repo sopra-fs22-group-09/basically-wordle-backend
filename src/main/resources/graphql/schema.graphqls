@@ -2,7 +2,8 @@
 type Query {
     getLobbies: [Lobby]
     profileByUserId(id: ID!): User
-    friends(status: UserStatus): [User]!
+    friendsByStatus(status: UserStatus): [User]!
+    allFriends: [User]!
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
@@ -23,6 +24,7 @@ type Mutation {
     #deleteLobby(id: ID!): Boolean
     updateLobbySettings(input: GameSettingsInput!): Lobby
     #sendLobbyMessage(message: String!): String
+    inviteToLobby(input: LobbyInviteInput!): Boolean
 
     #requestFriendByUserId(id: ID!): ID
     #sendMessageToUserId(input: MessageInput!): Message
@@ -34,7 +36,7 @@ type Mutation {
 type Subscription {
     #lobbyList: [Lobby]
     lobby: Lobby
-    #lobbyInvitations: ID
+    lobbyInvites: LobbyInvite
     #lobbyChat: Message
 
     #friendStatus: User # I suggest we use player (and thus add status to the player..)
@@ -61,6 +63,10 @@ input ResetInput {
 input ResetTokenInput {
     resetToken: String!
     password: String!
+}
+input LobbyInviteInput {
+    recipientId: ID
+    lobbyId: ID!
 }
 #input UserSettingsInput {
 #    avatarID: String!
@@ -119,6 +125,12 @@ type Lobby {
     gameMode: GameMode!
     game: Game!
     players: [Player]
+}
+type LobbyInvite {
+   id: ID
+   lobbyId: ID!
+   senderId: ID
+   recipientId: ID
 }
 type Game {
     amountRounds: Int

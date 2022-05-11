@@ -41,6 +41,14 @@ public class UserService {
         this.emailService = emailService;
     }
 
+    public Optional<User> findById(String userId) {
+        try {
+            return this.userRepository.findById(UUID.fromString(userId));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid UUID.");
+        }
+    }
+
     public User createUser(RegisterInput input) {
         if (this.userRepository.findByUsername(input.getUsername()) != null)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This username is already taken.");
@@ -172,10 +180,9 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password does not meet minimum password criteria.");
     }
 
-    public boolean addFriend(String friendId, String token) {
+    public boolean addFriend(String friendId, User user) {
         if (friendId == null || friendId.isEmpty())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No friendId provided.");
-        User user = getFromToken(token);
         Optional<User> friendToAdd;
         try {
             friendToAdd = this.userRepository.findById(UUID.fromString(friendId));
@@ -188,13 +195,16 @@ public class UserService {
         if (friendToAdd.get().equals(user)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "We already established that you have no friends.");
 
         user.getFriends().add(friendToAdd.get());
+        friendToAdd.get().getFriends().add(user);
         this.userRepository.saveAndFlush(user);
         return true;
     }
 
-    public List<User> friends(UserStatus status, String token) {
-        User user = getFromToken(token);
-
+    public List<User> friends(UserStatus status, User user) {
         return this.userRepository.findFriendsByIdAndStatus(user.getId(), status);
+    }
+
+    public List<User> friends(User user) {
+        return this.userRepository.findAllFriendsById(user.getId());
     }
 }
