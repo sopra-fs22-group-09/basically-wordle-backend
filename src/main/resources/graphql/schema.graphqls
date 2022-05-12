@@ -35,7 +35,7 @@ type Mutation {
 }
 type Subscription {
     #lobbyList: [Lobby]
-    lobby: Lobby
+    lobby(id: ID!): Lobby
     lobbyInvites: LobbyInvite
     friendsUpdates: User!
     #lobbyChat: Message

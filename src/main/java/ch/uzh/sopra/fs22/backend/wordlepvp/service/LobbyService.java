@@ -114,10 +114,9 @@ public class LobbyService {
 
     }
 
-    public Flux<Lobby> subscribeLobby(Mono<Player> player) {
+    public Flux<Lobby> subscribeLobby(String id, Mono<Player> player) {
         // TODO: Rewrite this!
-        return player.map(Player::getLobbyId)
-                .flatMapMany(this.lobbyRepository::getLobbyStream)
+        return this.lobbyRepository.getLobbyStream(id)
                 .publishOn(Schedulers.boundedElastic())
                 .doFinally(s -> this.lobbyRepository.getAllLobbies()
                         .publishOn(Schedulers.boundedElastic())

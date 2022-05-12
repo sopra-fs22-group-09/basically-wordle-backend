@@ -36,13 +36,13 @@ public class LobbyRepository {
         return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash()
                 .remove("lobbies", id)
                 .log();
+
     }
 
     public Mono<Lobby> getLobby(String id) {
         return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash()
                 .get("lobbies", id)
                 .log();
-
     }
 
     public Flux<Lobby> getLobbyStream(String id) {
@@ -54,11 +54,13 @@ public class LobbyRepository {
 
     public Flux<Lobby> getAllLobbies() {
         return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash().values("lobbies");
+
     }
 
     public Flux<LobbyInvite> getInvitesStream(User user) {
         return this.reactiveInviteRedisTemplate.listenToChannel("invite/" + user.getId().toString())
                 .map(ReactiveSubscription.Message::getMessage);
+
     }
 
     public Mono<Boolean> inviteToLobby(LobbyInvite invite) {

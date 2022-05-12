@@ -47,7 +47,6 @@ public class LobbyController {
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         // TODO: In lobby?
-        ;
         Mono<Player> player = this.playerService.createPlayer(user, id)
                 .publishOn(Schedulers.boundedElastic())
                 .doFirst(() -> this.userService.setUserStatus(user.getId(), UserStatus.INGAME));
@@ -77,10 +76,10 @@ public class LobbyController {
     }
 
     @SubscriptionMapping
-    public Flux<Lobby> lobby(@ContextValue("Authorization") String authHeader) {
+    public Flux<Lobby> lobby(@Argument @Valid String id, @ContextValue("Authorization") String authHeader) {
         String token = AuthorizationHelper.extractAuthToken(authHeader);
         Mono<Player> player = this.playerService.getFromToken(token);
-        return this.lobbyService.subscribeLobby(player)
+        return this.lobbyService.subscribeLobby(id, player)
                 .publishOn(Schedulers.boundedElastic())
                 .doFinally(ignored -> this.userService.setUserStatus(this.userService.getFromToken(token).getId(), UserStatus.ONLINE));
     }
