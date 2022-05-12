@@ -19,7 +19,7 @@ public class FriendsRepository {
         return this.reactiveRedisTemplate.listenToChannel("friends")
                 .map(ReactiveSubscription.Message::getMessage)
                 .filter(receivedFriend -> user.getFriends().stream().anyMatch(f -> f.getId().equals(receivedFriend.getId())))
-                .distinctUntilChanged();
+                .distinctUntilChanged();//User::getStatus);
 
     }
 

@@ -228,8 +228,8 @@ public class UserService {
     public Flux<User> getFriendsUpdates(String token) {
         User user = getFromToken(token);
         if (user != null)
-            return this.friendsRepository.getFriendsStream(user)
-                    .repeat();
+            return this.friendsRepository.getFriendsStream(user);
+//                    .repeat();
         else
             return Flux.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not authorized to subscribe here!"));
     }

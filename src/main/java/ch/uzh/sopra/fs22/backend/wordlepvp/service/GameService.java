@@ -141,7 +141,6 @@ public class GameService {
 //                        "You are not currently in a lobby.")))
                 .flatMap(lp -> this.lobbyRepository.saveLobby(lp.getT1()))
                 .flatMap(l -> l.getPlayers().stream().anyMatch(p -> l.getGame().getGameStatus(p) == GameStatus.SYNCING) ?
-                        // TODO: Selectively notify players?
                         this.gameRepository.saveGame(l.getGame())
                         :
                         initializeGame(player)
