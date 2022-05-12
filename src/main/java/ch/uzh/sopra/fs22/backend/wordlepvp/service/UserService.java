@@ -202,8 +202,8 @@ public class UserService {
 
         // TODO: Notify other user that we're now friends.
         // FIXME: Handle edge cases
-        user.getFriends().add(friendToAdd.get());
         friendToAdd.get().getFriends().add(user);
+        user.getFriends().add(friendToAdd.get());
         this.userRepository.saveAndFlush(user);
         this.friendsRepository.broadcastFriendsEvent(user).subscribe();
         return true;
@@ -228,7 +228,8 @@ public class UserService {
     public Flux<User> getFriendsUpdates(String token) {
         User user = getFromToken(token);
         if (user != null)
-            return this.friendsRepository.getFriendsStream(user);
+            return this.friendsRepository.getFriendsStream(user)
+                    .repeat();
         else
             return Flux.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not authorized to subscribe here!"));
     }

@@ -170,6 +170,7 @@ public class LobbyService {
                 .lobbyId(lobbyId)
                 .senderId(sender.getId().toString())
                 .recipientId(recipient.getId().toString())
+                .timeout(3600L) // 1h
                 .build();
         return this.lobbyRepository.inviteToLobby(invite);
     }
