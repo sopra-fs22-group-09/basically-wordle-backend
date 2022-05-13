@@ -54,6 +54,27 @@ public class LobbyService {
 
     }
 
+    public Mono<Lobby> reinitializeLobby(Mono<Player> player) {
+
+        return player.mapNotNull(Player::getLobbyId)
+                .flatMap(this.lobbyRepository::getLobby)
+                .zipWith(player, (l, p) -> {
+                    if (!Objects.equals(l.getOwner().getId(), p.getId())) {
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to initiate a rematch!");
+                    }
+                    return l;
+                })
+                .publishOn(Schedulers.boundedElastic())
+                .mapNotNull(l -> {
+                        l.setGameMode(GameMode.WORDSPP);
+                        l.setGame(this.createGame(l.getId(), l.getGameMode()));
+                    return l;
+                })
+                .flatMap(this.lobbyRepository::saveLobby)
+                .log();
+
+    }
+
     public Mono<Lobby> addPlayerToLobby(String id, Mono<Player> player) {
 
         return this.lobbyRepository.getLobby(id)
@@ -80,6 +101,9 @@ public class LobbyService {
         this.lobbyRepository.getLobby(id)
                 .zipWith(player, (l, p) -> {
                     l.getPlayers().remove(p);
+                    if (l.getPlayers().size() < l.getSize()) {
+                        l.setStatus(LobbyStatus.OPEN);
+                    }
                     return l;
                 })
                 .flatMap(this.lobbyRepository::saveLobby)

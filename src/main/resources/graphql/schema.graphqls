@@ -20,6 +20,7 @@ type Mutation {
     createLobby(input: LobbyInput!): Lobby
     joinLobbyById(id: ID!): Lobby
     guestJoinLobbyById(id: ID!): Lobby
+    goBackToLobby: Lobby
     #deleteLobby(id: ID!): Boolean
     updateLobbySettings(input: GameSettingsInput!): Lobby
     leaveGame(id: ID!): Boolean
