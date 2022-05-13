@@ -75,6 +75,17 @@ public class LobbyService {
 
     }
 
+    public void removePlayerFromLobby(String id, Mono<Player> player) {
+
+        this.lobbyRepository.getLobby(id)
+                .zipWith(player, (l, p) -> {
+                    l.getPlayers().remove(p);
+                    return l;
+                })
+                .flatMap(this.lobbyRepository::saveLobby)
+                .log();
+    }
+
     public Mono<Lobby> changeLobby(GameSettingsInput input, Mono<Player> player) {
 
         return player.mapNotNull(Player::getLobbyId)

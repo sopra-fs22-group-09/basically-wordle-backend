@@ -53,6 +53,13 @@ public class LobbyController {
         return this.lobbyService.changeLobby(input, player);
     }
 
+    @MutationMapping
+    public boolean leaveGame(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        this.lobbyService.removePlayerFromLobby(id, player);
+        return true;
+    }
+
     @SubscriptionMapping
     public Flux<Lobby> lobby(@ContextValue("Authorization") String authHeader) {
         Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
