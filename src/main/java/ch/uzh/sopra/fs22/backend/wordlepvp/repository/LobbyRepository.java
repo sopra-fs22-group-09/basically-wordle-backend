@@ -15,10 +15,12 @@ public class LobbyRepository {
 
     private final ReactiveRedisTemplate<String, Lobby> reactiveLobbyRedisTemplate;
     private final ReactiveRedisTemplate<String, List<Lobby>> reactiveLobbiesRedisTemplate;
+    private final ReactiveRedisTemplate<String, LobbyInvite> reactiveInviteRedisTemplate;
 
-    public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveLobbyRedisTemplate, ReactiveRedisTemplate<String, List<Lobby>> reactiveLobbiesRedisTemplate) {
+    public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveLobbyRedisTemplate, ReactiveRedisTemplate<String, List<Lobby>> reactiveLobbiesRedisTemplate, ReactiveRedisTemplate<String, LobbyInvite> reactiveInviteRedisTemplate) {
         this.reactiveLobbyRedisTemplate = reactiveLobbyRedisTemplate;
         this.reactiveLobbiesRedisTemplate = reactiveLobbiesRedisTemplate;
+        this.reactiveInviteRedisTemplate = reactiveInviteRedisTemplate;
     }
 
     public Mono<Lobby> saveLobby(Lobby lobby) {
@@ -40,14 +42,12 @@ public class LobbyRepository {
                 .flatMap(ll -> this.reactiveLobbiesRedisTemplate.convertAndSend("lobbies", ll.getT2()).thenReturn(ll))
                 .map(Tuple2::getT1)
                 .log();
-
     }
 
     public Mono<Lobby> getLobby(String id) {
         return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash()
                 .get("lobbies", id)
                 .log();
-
     }
 
     public Flux<Lobby> getLobbyStream(String id) {
@@ -59,12 +59,27 @@ public class LobbyRepository {
 
     public Flux<Lobby> getAllLobbies() {
         return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash().values("lobbies");
-
     }
 
     public Flux<List<Lobby>> getAllLobbiesStream() {
         return this.reactiveLobbiesRedisTemplate.listenToChannel("lobbies")
                 .map(ReactiveSubscription.Message::getMessage)
+                .log();
+
+    }
+
+    public Flux<LobbyInvite> getInvitesStream(User user) {
+        return this.reactiveInviteRedisTemplate.listenToChannel("invite/" + user.getId().toString())
+                .map(ReactiveSubscription.Message::getMessage);
+
+    }
+
+    public Mono<Boolean> inviteToLobby(LobbyInvite invite) {
+        return this.reactiveInviteRedisTemplate.<String, LobbyInvite>opsForHash()
+                .put("invites", invite.getId(), invite)
+                .map(i -> invite)
+                .flatMap(i -> this.reactiveInviteRedisTemplate.convertAndSend("invite/" + i.getRecipientId(), i))
+                .thenReturn(true)
                 .log();
 
     }

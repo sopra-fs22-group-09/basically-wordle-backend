@@ -1,6 +1,8 @@
 #scalar Date
 type Query {
     profileByUserId(id: ID!): User
+    friendsByStatus(status: UserStatus): [User]!
+    allFriends: [User]!
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
@@ -14,6 +16,7 @@ type Mutation {
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
     #updateUserProfile(input: UserSettingsInput!): User
+    addFriend(friendId: ID!): Boolean
     tutorialFinished: Boolean!
 
     createLobby(input: LobbyInput!): Lobby
@@ -21,6 +24,7 @@ type Mutation {
     #deleteLobby(id: ID!): Boolean
     updateLobbySettings(input: GameSettingsInput!): Lobby
     #sendLobbyMessage(message: String!): String
+    inviteToLobby(input: LobbyInviteInput!): Boolean
 
     #requestFriendByUserId(id: ID!): ID
     #sendMessageToUserId(input: MessageInput!): Message
@@ -32,7 +36,8 @@ type Mutation {
 type Subscription {
     lobbyList: [Lobby]
     lobby(id: ID!): Lobby
-    #lobbyInvitations: ID
+    lobbyInvites: LobbyInvite
+    friendsUpdates: User!
     #lobbyChat: Message
 
     #friendStatus: User # I suggest we use player (and thus add status to the player..)
@@ -59,6 +64,10 @@ input ResetInput {
 input ResetTokenInput {
     resetToken: String!
     password: String!
+}
+input LobbyInviteInput {
+    recipientId: ID
+    lobbyId: ID!
 }
 #input UserSettingsInput {
 #    avatarID: String!
@@ -118,6 +127,12 @@ type Lobby {
     game: Game!
     players: [Player]
 }
+type LobbyInvite {
+   id: ID
+   lobbyId: ID!
+   senderId: ID
+   recipientId: ID
+}
 type Game {
     amountRounds: Int
     roundTime: Int
@@ -146,7 +161,10 @@ type Message {
 #--------------------------------------------------
 enum UserStatus {
     ONLINE
+    CREATING_LOBBY
+    INGAME
     AWAY
+    OFFLINE
 }
 enum GameCategory {
     PVP

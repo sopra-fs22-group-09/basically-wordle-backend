@@ -62,7 +62,7 @@ public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
                 response.getResponseHeaders().setBearerAuth(bearerToken);
                 log.debug("Set Authorization header: {}", response.getResponseHeaders().getFirst("Authorization"));
             } catch (Exception e) {
-                log.error(e.getMessage());
+                log.warn(e.getMessage());
             }
             return response;
         });
