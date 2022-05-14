@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple2;
 
 import javax.validation.Valid;
 import java.util.Optional;
@@ -47,10 +48,20 @@ public class LobbyController {
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         // TODO: In lobby?
-        Mono<Player> player = this.playerService.createPlayer(user, id)
+        var player = this.playerService.createPlayer(user, id);
+        var lobby = this.lobbyService.getLobbyById(id);
+
+        return player.zipWith(lobby)
+                .filter(pl -> !pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
+                .map(Tuple2::getT1)
                 .publishOn(Schedulers.boundedElastic())
-                .doFirst(() -> this.userService.setUserStatus(user.getId(), UserStatus.INGAME));
-        return this.lobbyService.addPlayerToLobby(id, player);
+                .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.INGAME))
+                .switchIfEmpty(player)
+                .zipWith(lobby)
+                .filter(pl -> pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
+                .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.CREATING_LOBBY))
+                .switchIfEmpty(player.zipWith(lobby))
+                .zipWith(this.lobbyService.addPlayerToLobby(id, player), (p, l) -> l);
     }
 
     @MutationMapping

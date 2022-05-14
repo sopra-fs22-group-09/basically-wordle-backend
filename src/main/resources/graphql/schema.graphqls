@@ -161,7 +161,7 @@ type Message {
 #--------------------------------------------------
 enum UserStatus {
     ONLINE
-    CREATINGLOBBY
+    CREATING_LOBBY
     INGAME
     AWAY
     OFFLINE

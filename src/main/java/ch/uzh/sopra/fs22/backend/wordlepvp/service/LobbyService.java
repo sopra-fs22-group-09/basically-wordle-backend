@@ -29,6 +29,10 @@ public class LobbyService {
         this.lobbyRepository = lobbyRepository;
     }
 
+    public Mono<Lobby> getLobbyById(String lobbyId) {
+        return this.lobbyRepository.getLobby(lobbyId);
+    }
+
     public Mono<Lobby> initializeLobby(LobbyInput input, Mono<Player> player) {
 
         if (input.getSize() > input.getGameCategory().getMaxGameSize()) {
