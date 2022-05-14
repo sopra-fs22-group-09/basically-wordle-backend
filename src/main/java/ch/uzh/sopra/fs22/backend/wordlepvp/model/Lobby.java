@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
+import org.springframework.data.redis.core.TimeToLive;
 import org.springframework.data.redis.core.RedisHash;
 
 import java.io.Serializable;
@@ -39,4 +40,7 @@ public class Lobby implements Serializable {
     private Game game;
 
     private LobbyStatus status;
+
+    @TimeToLive
+    private Long timeout;
 }

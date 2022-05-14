@@ -1,6 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.UserStatus;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.LobbyService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
@@ -20,6 +21,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
 
 import javax.validation.Valid;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,8 +42,8 @@ public class LobbyController {
     @MutationMapping
     public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        Mono<Player> player = this.playerService.createPlayer(user, null);
-        return this.lobbyService.initializeLobby(input, player);
+        //Mono<Player> player = this.playerService.createPlayer(user, null);
+        return this.lobbyService.initializeLobby(input/*, player*/);
     }
 
     @MutationMapping
@@ -81,6 +83,12 @@ public class LobbyController {
         if (recipient.isEmpty())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only friends can be invited.");
         return this.lobbyService.sendLobbyInvite(input.getLobbyId(), recipient.get(), sender);
+    }
+
+    @SubscriptionMapping
+    public Flux<List<Lobby>> lobbyList(@ContextValue("Authorization") String authHeader) {
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.lobbyService.subscribeLobbies();
     }
 
     @SubscriptionMapping

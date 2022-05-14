@@ -14,7 +14,9 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -33,18 +35,32 @@ public class LobbyService {
         return this.lobbyRepository.getLobby(lobbyId);
     }
 
-    public Mono<Lobby> initializeLobby(LobbyInput input, Mono<Player> player) {
+    public Mono<Lobby> initializeLobby(LobbyInput input/*, Mono<Player> player*/) {
 
         if (input.getSize() > input.getGameCategory().getMaxGameSize()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby size is too big.");
         }
 
-        return player.publishOn(Schedulers.boundedElastic()).map(p -> {
+        Lobby lobby = Lobby.builder()
+                .id(UUID.randomUUID().toString())
+                .name(input.getName())
+                .size(input.getSize())
+                //.owner(p)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(input.getGameCategory())
+                .gameMode(input.getGameCategory().getDefaultGameMode())
+                .players(new HashSet<>())
+                .build();
+        lobby.setGame(this.createGame(lobby.getId(), lobby.getGameMode()));
+
+        return this.lobbyRepository.saveLobby(lobby).log();
+
+/*        return player.publishOn(Schedulers.boundedElastic()).map(p -> {
             Lobby lobby = Lobby.builder()
                     .id(UUID.randomUUID().toString())
                     .name(input.getName())
                     .size(input.getSize())
-                    .owner(p)
+                    //.owner(p)
                     .status(LobbyStatus.OPEN)
                     .gameCategory(input.getGameCategory())
                     .gameMode(input.getGameCategory().getDefaultGameMode())
@@ -54,10 +70,11 @@ public class LobbyService {
             return lobby;
         })
                 .flatMap(this.lobbyRepository::saveLobby)
-                .log();
+                .log();*/
 
     }
 
+    //TODO: should not be able to be in multiple lobbies !!!
     public Mono<Lobby> addPlayerToLobby(String id, Mono<Player> player) {
 
         return this.lobbyRepository.getLobby(id)
@@ -68,7 +85,12 @@ public class LobbyService {
                     if (l.getStatus().equals(LobbyStatus.INGAME)) {
                         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby is already in game.");
                     }
+                    if (l.getPlayers().size() == 0) {
+                        l.setOwner(p);
+                    }
                     l.getPlayers().add(p);
+                    l.setTimeout(3600L);
+
                     if (l.getPlayers().size() >= l.getSize()) {
                         l.setStatus(LobbyStatus.FULL);
                     }
@@ -98,15 +120,12 @@ public class LobbyService {
                         l.setGameMode(input.getGameMode());
                         l.setGame(this.createGame(l.getId(), l.getGameMode()));
                     } else {
-                        System.out.println("11111111111111 Rounds: " + input.getAmountRounds() + ", Time: " + input.getRoundTime() + ", maxRounds: " + l.getGame().getMaxRounds() + ", maxTime: " + l.getGame().getMaxTime());
-
                         if (input.getAmountRounds() > l.getGame().getMaxRounds()) {
                             input.setAmountRounds(l.getGame().getMaxRounds());
                         }
                         if (input.getRoundTime() > l.getGame().getMaxTime()) {
                             input.setRoundTime(l.getGame().getMaxTime());
                         }
-                        System.out.println("11111111111111 Rounds: " + input.getAmountRounds() + ", Time: " + input.getRoundTime() + ", maxRounds: " + l.getGame().getMaxRounds() + ", maxTime: " + l.getGame().getMaxTime());
 
                         l.getGame().setAmountRounds(input.getAmountRounds());
                         l.getGame().setRoundTime(input.getRoundTime());
@@ -119,7 +138,6 @@ public class LobbyService {
     }
 
     public Flux<Lobby> subscribeLobby(String id, Mono<Player> player) {
-        // TODO: Rewrite this!
         return this.lobbyRepository.getLobbyStream(id)
                 .publishOn(Schedulers.boundedElastic())
                 .doFinally(s -> this.lobbyRepository.getAllLobbies()
@@ -135,11 +153,14 @@ public class LobbyService {
                                 l.setOwner(l.getPlayers().stream().findFirst().get());
                             }
 
-                            if (!l.getPlayers().isEmpty()) {
-                                this.lobbyRepository.saveLobby(l).subscribe();
-                            } else {
-                                this.lobbyRepository.deleteLobby(l.getId()).subscribe();
+                            this.lobbyRepository.saveLobby(l).subscribe();
+                            if (l.getPlayers().isEmpty()) {
+                                //l.setTimeout(10L);
+                                this.lobbyRepository.deleteLobby(l.getId())
+                                        .filter(lobby -> l.getPlayers().isEmpty())
+                                        .delaySubscription(Duration.ofSeconds(10L)).subscribe();
                             }
+
                             return l;
                         }).subscribe()
                 )
@@ -149,6 +170,10 @@ public class LobbyService {
 
     public Flux<Lobby> getLobbies() {
         return this.lobbyRepository.getAllLobbies();
+    }
+
+    public Flux<List<Lobby>> subscribeLobbies() {
+        return this.lobbyRepository.getAllLobbiesStream();
     }
 
     //TODO MAYBE WE CAN NOW PUT THAT INTO THE GAMESERVICE SINCE LOBBYSERVICE IS NEW

@@ -1,12 +1,12 @@
 #scalar Date
 type Query {
-    getLobbies: [Lobby]
     profileByUserId(id: ID!): User
     friendsByStatus(status: UserStatus): [User]!
     allFriends: [User]!
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
+    getLobbies: [Lobby]
     concludeGame: GameStats
 }
 type Mutation {
@@ -34,7 +34,7 @@ type Mutation {
     #playAgain: ID # I suggest we use the Lobby ID?
 }
 type Subscription {
-    #lobbyList: [Lobby]
+    lobbyList: [Lobby]
     lobby(id: ID!): Lobby
     lobbyInvites: LobbyInvite
     friendsUpdates: User!
@@ -45,7 +45,7 @@ type Subscription {
     #chatMessages: Message
 
     #lobbyReady: ID # I suggest we use the Lobby ID?
-    gameStatus: GameStatus
+    gameStatus(id: ID!): GameStatus
     opponentGameRound: [GameRound]
 }
 #--------------------------------------------------

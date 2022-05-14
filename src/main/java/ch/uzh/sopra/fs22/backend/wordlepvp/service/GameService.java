@@ -93,11 +93,13 @@ public class GameService {
 
     }
 
-    public Flux<GameStatus> getGameStatus(Mono<Player> player) {
+    public Flux<GameStatus> getGameStatus(String id, Mono<Player> player) {
 
-        return player
+        return this.gameRepository.getGameStatusStream(id);
+
+/*        return player
                 .flatMapMany(this.gameRepository::getGameStatusStream)
-                .log();
+                .log();*/
 
     }
 
