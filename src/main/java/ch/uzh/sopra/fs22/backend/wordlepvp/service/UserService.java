@@ -221,8 +221,8 @@ public class UserService {
         Optional<User> foundUser = findById(userId);
         if (foundUser.isEmpty()) return;
         foundUser.get().setStatus(status);
-        this.userRepository.saveAndFlush(foundUser.get());
-        this.friendsRepository.broadcastFriendsEvent(foundUser.get()).subscribe();
+        User newUser = this.userRepository.saveAndFlush(foundUser.get());
+        this.friendsRepository.broadcastFriendsEvent(newUser).subscribe();
     }
 
     public Flux<User> getFriendsUpdates(String token) {

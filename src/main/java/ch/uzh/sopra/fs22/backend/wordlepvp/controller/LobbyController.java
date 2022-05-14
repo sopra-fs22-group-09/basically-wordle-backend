@@ -42,8 +42,8 @@ public class LobbyController {
     @MutationMapping
     public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        //Mono<Player> player = this.playerService.createPlayer(user, null);
-        return this.lobbyService.initializeLobby(input/*, player*/);
+        Mono<Player> player = this.playerService.createPlayer(user, null);
+        return this.lobbyService.initializeLobby(input, player);
     }
 
     @MutationMapping
@@ -53,13 +53,16 @@ public class LobbyController {
         var player = this.playerService.createPlayer(user, id);
         var lobby = this.lobbyService.getLobbyById(id);
 
-        return player.publishOn(Schedulers.boundedElastic())
-                .doFirst(() -> this.userService.setUserStatus(user.getId(), UserStatus.CREATING_LOBBY))
-                .zipWith(lobby)
+        return player.zipWith(lobby)
                 .filter(pl -> !pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
                 .map(Tuple2::getT1)
+                .publishOn(Schedulers.boundedElastic())
                 .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.INGAME))
                 .switchIfEmpty(player)
+                .zipWith(lobby)
+                .filter(pl -> pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
+                .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.CREATING_LOBBY))
+                .switchIfEmpty(player.zipWith(lobby))
                 .zipWith(this.lobbyService.addPlayerToLobby(id, player), (p, l) -> l);
     }
 

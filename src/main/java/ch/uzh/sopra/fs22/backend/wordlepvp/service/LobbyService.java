@@ -35,13 +35,13 @@ public class LobbyService {
         return this.lobbyRepository.getLobby(lobbyId);
     }
 
-    public Mono<Lobby> initializeLobby(LobbyInput input/*, Mono<Player> player*/) {
+    public Mono<Lobby> initializeLobby(LobbyInput input, Mono<Player> player) {
 
         if (input.getSize() > input.getGameCategory().getMaxGameSize()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby size is too big.");
         }
 
-        Lobby lobby = Lobby.builder()
+        /*Lobby lobby = Lobby.builder()
                 .id(UUID.randomUUID().toString())
                 .name(input.getName())
                 .size(input.getSize())
@@ -53,14 +53,14 @@ public class LobbyService {
                 .build();
         lobby.setGame(this.createGame(lobby.getId(), lobby.getGameMode()));
 
-        return this.lobbyRepository.saveLobby(lobby).log();
+        return this.lobbyRepository.saveLobby(lobby).log();*/
 
-/*        return player.publishOn(Schedulers.boundedElastic()).map(p -> {
+        return player.publishOn(Schedulers.boundedElastic()).map(p -> {
             Lobby lobby = Lobby.builder()
                     .id(UUID.randomUUID().toString())
                     .name(input.getName())
                     .size(input.getSize())
-                    //.owner(p)
+                    .owner(p)
                     .status(LobbyStatus.OPEN)
                     .gameCategory(input.getGameCategory())
                     .gameMode(input.getGameCategory().getDefaultGameMode())
@@ -70,7 +70,7 @@ public class LobbyService {
             return lobby;
         })
                 .flatMap(this.lobbyRepository::saveLobby)
-                .log();*/
+                .log();
 
     }
 
@@ -85,9 +85,9 @@ public class LobbyService {
                     if (l.getStatus().equals(LobbyStatus.INGAME)) {
                         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby is already in game.");
                     }
-                    if (l.getPlayers().size() == 0) {
-                        l.setOwner(p);
-                    }
+//                    if (l.getPlayers().size() == 0) {
+//                        l.setOwner(p);
+//                    }
                     l.getPlayers().add(p);
                     l.setTimeout(3600L);
 
@@ -137,6 +137,7 @@ public class LobbyService {
 
     }
 
+    // TODO: Check whether lobby full and reject
     public Flux<Lobby> subscribeLobby(String id, Mono<Player> player) {
         return this.lobbyRepository.getLobbyStream(id)
                 .publishOn(Schedulers.boundedElastic())
