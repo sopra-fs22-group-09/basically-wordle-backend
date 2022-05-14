@@ -51,16 +51,13 @@ public class LobbyController {
         var player = this.playerService.createPlayer(user, id);
         var lobby = this.lobbyService.getLobbyById(id);
 
-        return player.zipWith(lobby)
+        return player.publishOn(Schedulers.boundedElastic())
+                .doFirst(() -> this.userService.setUserStatus(user.getId(), UserStatus.CREATING_LOBBY))
+                .zipWith(lobby)
                 .filter(pl -> !pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
                 .map(Tuple2::getT1)
-                .publishOn(Schedulers.boundedElastic())
                 .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.INGAME))
                 .switchIfEmpty(player)
-                .zipWith(lobby)
-                .filter(pl -> pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
-                .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.CREATING_LOBBY))
-                .switchIfEmpty(player.zipWith(lobby))
                 .zipWith(this.lobbyService.addPlayerToLobby(id, player), (p, l) -> l);
     }
 
