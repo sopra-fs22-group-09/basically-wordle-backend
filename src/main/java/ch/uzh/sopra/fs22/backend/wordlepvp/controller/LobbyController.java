@@ -17,6 +17,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @Validated
 @Controller
@@ -27,11 +28,16 @@ public class LobbyController {
     private final UserService userService;
     private final PlayerService playerService;
 
+    @QueryMapping
+    public Flux<Lobby> getLobbies() {
+        return this.lobbyService.getLobbies();
+    }
+
     @MutationMapping
     public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        Mono<Player> player = this.playerService.createPlayer(user, null);
-        return this.lobbyService.initializeLobby(input, player);
+        //Mono<Player> player = this.playerService.createPlayer(user, null);
+        return this.lobbyService.initializeLobby(input/*, player*/);
     }
 
     @MutationMapping
@@ -48,13 +54,14 @@ public class LobbyController {
     }
 
     @SubscriptionMapping
-    public Flux<Lobby> lobby(@ContextValue("Authorization") String authHeader) {
+    public Flux<List<Lobby>> lobbyList(@ContextValue("Authorization") String authHeader) {
         Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.lobbyService.subscribeLobby(player);
+        return this.lobbyService.subscribeLobbies();
     }
 
-    @QueryMapping
-    public Flux<Lobby> getLobbies() {
-        return this.lobbyService.getLobbies();
+    @SubscriptionMapping
+    public Flux<Lobby> lobby(@Argument @Valid String id, @ContextValue("Authorization") String authHeader) {
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.lobbyService.subscribeLobby(id, player);
     }
 }

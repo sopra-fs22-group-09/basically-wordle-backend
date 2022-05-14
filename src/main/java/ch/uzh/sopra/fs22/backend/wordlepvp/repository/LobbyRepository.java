@@ -6,51 +6,66 @@ import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple2;
+
+import java.util.List;
 
 @Component
 public class LobbyRepository {
 
-    private final ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate;
+    private final ReactiveRedisTemplate<String, Lobby> reactiveLobbyRedisTemplate;
+    private final ReactiveRedisTemplate<String, List<Lobby>> reactiveLobbiesRedisTemplate;
 
-    public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveRedisTemplate) {
-        this.reactiveRedisTemplate = reactiveRedisTemplate;
+    public LobbyRepository(ReactiveRedisTemplate<String, Lobby> reactiveLobbyRedisTemplate, ReactiveRedisTemplate<String, List<Lobby>> reactiveLobbiesRedisTemplate) {
+        this.reactiveLobbyRedisTemplate = reactiveLobbyRedisTemplate;
+        this.reactiveLobbiesRedisTemplate = reactiveLobbiesRedisTemplate;
     }
 
-    // TODO: Check for lobby name duplicates ? maybe. or maybe not. or no, not at all.
-    // TODO: handle 2 browser sessions, change status on full & allow entry if not full
-
     public Mono<Lobby> saveLobby(Lobby lobby) {
-        return this.reactiveRedisTemplate.<String, Lobby>opsForHash()
+        return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash()
                 .put("lobbies", lobby.getId(), lobby)
                 .map(l -> lobby)
-                .flatMap(l -> this.reactiveRedisTemplate.convertAndSend("lobby/" + l.getId(), l).thenReturn(l))
-                .flatMap(l -> this.reactiveRedisTemplate.convertAndSend("lobbies", l).thenReturn(l))
+                .flatMap(l -> this.reactiveLobbyRedisTemplate.convertAndSend("lobby/" + l.getId(), l).thenReturn(l))
+                .zipWith(getAllLobbies().collectList())
+                .flatMap(ll -> this.reactiveLobbiesRedisTemplate.convertAndSend("lobbies", ll.getT2()).thenReturn(ll))
+                .map(Tuple2::getT1)
                 .log();
 
     }
 
     public Mono<Long> deleteLobby(String id) {
-        return this.reactiveRedisTemplate.<String, Lobby>opsForHash()
+        return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash()
                 .remove("lobbies", id)
+                .zipWith(getAllLobbies().collectList())
+                .flatMap(ll -> this.reactiveLobbiesRedisTemplate.convertAndSend("lobbies", ll.getT2()).thenReturn(ll))
+                .map(Tuple2::getT1)
                 .log();
+
     }
 
     public Mono<Lobby> getLobby(String id) {
-        return this.reactiveRedisTemplate.<String, Lobby>opsForHash()
+        return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash()
                 .get("lobbies", id)
                 .log();
 
     }
 
     public Flux<Lobby> getLobbyStream(String id) {
-        return this.reactiveRedisTemplate.listenToChannel("lobby/" + id)
+        return this.reactiveLobbyRedisTemplate.listenToChannel("lobby/" + id)
                 .map(ReactiveSubscription.Message::getMessage)
                 .log();
 
     }
 
     public Flux<Lobby> getAllLobbies() {
-        return this.reactiveRedisTemplate.<String, Lobby>opsForHash().values("lobbies");
+        return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash().values("lobbies");
+
+    }
+
+    public Flux<List<Lobby>> getAllLobbiesStream() {
+        return this.reactiveLobbiesRedisTemplate.listenToChannel("lobbies")
+                .map(ReactiveSubscription.Message::getMessage)
+                .log();
+
     }
 }

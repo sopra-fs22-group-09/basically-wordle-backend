@@ -49,13 +49,13 @@ public class GameRepository {
                 .log();
     }
 
-    public Flux<GameStatus> getGameStatusStream(Player player) {
+    public Flux<GameStatus> getGameStatusStream(String id) {
         // FIXME: Use Game ID in the future
-        return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/game/" + player.getLobbyId(), "gameSync/player/" + player.getId())
+        return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/game/" + id/*, "gameSync/player/" + player.getId()*/)
                 .map(ReactiveSubscription.Message::getMessage)
                 .distinctUntilChanged()
                 // Reset after round concludes!
-//                .distinct()
+                //.distinct()
                 .log();
     }
 

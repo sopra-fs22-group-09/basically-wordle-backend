@@ -40,9 +40,9 @@ public class GameController {
     }
 
     @SubscriptionMapping
-    public Flux<GameStatus> gameStatus(@ContextValue(name = "Authorization") String authHeader) {
+    public Flux<GameStatus> gameStatus(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         Mono<Player> player = playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        return this.gameService.getGameStatus(player);
+        return this.gameService.getGameStatus(id, player);
     }
 
     @SubscriptionMapping
