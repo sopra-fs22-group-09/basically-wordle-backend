@@ -3,6 +3,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.UserStatus;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.AuthRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.FriendsRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.UserRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
@@ -18,17 +19,17 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 
 import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Transactional
 public class UserService {
     private final Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
+    private final FriendsRepository friendsRepository;
     private final AuthRepository authRepository;
     private final Argon2PasswordEncoder encoder = new Argon2PasswordEncoder();
     private final EmailService emailService;
@@ -37,10 +38,19 @@ public class UserService {
     private String activeProfile;
 
     @Autowired
-    public UserService(@Qualifier("userRepository") UserRepository userRepository, AuthRepository authRepository, EmailService emailService) {
+    public UserService(@Qualifier("userRepository") UserRepository userRepository, FriendsRepository friendsRepository, AuthRepository authRepository, EmailService emailService) {
         this.userRepository = userRepository;
+        this.friendsRepository = friendsRepository;
         this.authRepository = authRepository;
         this.emailService = emailService;
+    }
+
+    public Optional<User> findById(UUID userId) {
+        try {
+            return this.userRepository.findById(userId);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid UUID.");
+        }
     }
 
     public User createUser(RegisterInput input) {
@@ -89,6 +99,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The username and password combination does not exist.");
 
         userByUsername.setStatus(UserStatus.ONLINE);
+        this.friendsRepository.broadcastFriendsEvent(userByUsername).subscribe();
         return userByUsername;
     }
 
@@ -96,6 +107,7 @@ public class UserService {
         User user = getFromToken(token);
         user.setStatus(UserStatus.OFFLINE);
         authRepository.expire(token);
+        this.friendsRepository.broadcastFriendsEvent(user).subscribe();
         return true;
     }
 
@@ -172,5 +184,53 @@ public class UserService {
         }
         if (!(digit && uppercase && lowercase && specialCharacters))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password does not meet minimum password criteria.");
+    }
+
+    public boolean addFriend(String friendId, User user) {
+        if (friendId == null || friendId.isEmpty())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No friendId provided.");
+        Optional<User> friendToAdd;
+        try {
+            friendToAdd = this.userRepository.findById(UUID.fromString(friendId));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The given friendId is invalid.");
+        }
+
+        if (friendToAdd.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The given friendId is invalid.");
+
+        if (friendToAdd.get().equals(user)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "We already established that you have no friends.");
+
+        // TODO: Notify other user that we're now friends.
+        // FIXME: Handle edge cases
+        friendToAdd.get().getFriends().add(user);
+        user.getFriends().add(friendToAdd.get());
+        this.userRepository.saveAndFlush(user);
+        this.friendsRepository.broadcastFriendsEvent(user).subscribe();
+        return true;
+    }
+
+    public List<User> friends(UserStatus status, User user) {
+        return this.userRepository.findFriendsByIdAndStatus(user.getId(), status);
+    }
+
+    public List<User> friends(User user) {
+        return this.userRepository.findAllFriendsById(user.getId());
+    }
+
+    public void setUserStatus(UUID userId, UserStatus status) {
+        Optional<User> foundUser = findById(userId);
+        if (foundUser.isEmpty()) return;
+        foundUser.get().setStatus(status);
+        User newUser = this.userRepository.saveAndFlush(foundUser.get());
+        this.friendsRepository.broadcastFriendsEvent(newUser).subscribe();
+    }
+
+    public Flux<User> getFriendsUpdates(String token) {
+        User user = getFromToken(token);
+        if (user != null)
+            return this.friendsRepository.getFriendsStream(user);
+//                    .repeat();
+        else
+            return Flux.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not authorized to subscribe here!"));
     }
 }

@@ -80,7 +80,7 @@ public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
                 }
 
             } catch (Exception e) {
-                log.error(e.getMessage());
+                log.warn(e.getMessage());
             }
             return response;
         });

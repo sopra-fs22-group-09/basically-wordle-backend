@@ -1,10 +1,12 @@
 #scalar Date
 type Query {
-    getLobbies: [Lobby]
     profileByUserId(id: ID!): User
+    friendsByStatus(status: UserStatus): [User]!
+    allFriends: [User]!
     #scores: [Score]
     #settingsByUserId(id: Int!): UserSettings
 
+    getLobbies: [Lobby]
     concludeGame: GameStats
 }
 type Mutation {
@@ -15,6 +17,7 @@ type Mutation {
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
     #updateUserProfile(input: UserSettingsInput!): User
+    addFriend(friendId: ID!): Boolean
     tutorialFinished: Boolean!
 
     createLobby(input: LobbyInput!): Lobby
@@ -25,6 +28,7 @@ type Mutation {
     updateLobbySettings(input: GameSettingsInput!): Lobby
     leaveGame(id: ID!): Boolean
     #sendLobbyMessage(message: String!): String
+    inviteToLobby(input: LobbyInviteInput!): Boolean
 
     #requestFriendByUserId(id: ID!): ID
     #sendMessageToUserId(input: MessageInput!): Message
@@ -34,9 +38,10 @@ type Mutation {
     #playAgain: ID # I suggest we use the Lobby ID?
 }
 type Subscription {
-    #lobbyList: [Lobby]
-    lobby: Lobby
-    #lobbyInvitations: ID
+    lobbyList: [Lobby]
+    lobby(id: ID!): Lobby
+    lobbyInvites: LobbyInvite
+    friendsUpdates: User!
     #lobbyChat: Message
 
     #friendStatus: User # I suggest we use player (and thus add status to the player..)
@@ -44,7 +49,7 @@ type Subscription {
     #chatMessages: Message
 
     #lobbyReady: ID # I suggest we use the Lobby ID?
-    gameStatus: GameStatus
+    gameStatus(id: ID!): GameStatus
     opponentGameRound: [GameRound]
 }
 #--------------------------------------------------
@@ -63,6 +68,10 @@ input ResetInput {
 input ResetTokenInput {
     resetToken: String!
     password: String!
+}
+input LobbyInviteInput {
+    recipientId: ID
+    lobbyId: ID!
 }
 #input UserSettingsInput {
 #    avatarID: String!
@@ -122,6 +131,12 @@ type Lobby {
     game: Game!
     players: [Player]
 }
+type LobbyInvite {
+   id: ID
+   lobbyId: ID!
+   senderId: ID
+   recipientId: ID
+}
 type Game {
     amountRounds: Int
     roundTime: Int
@@ -150,7 +165,10 @@ type Message {
 #--------------------------------------------------
 enum UserStatus {
     ONLINE
+    CREATING_LOBBY
+    INGAME
     AWAY
+    OFFLINE
 }
 enum GameCategory {
     PVP

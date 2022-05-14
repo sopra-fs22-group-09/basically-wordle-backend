@@ -40,11 +40,14 @@ public class User extends BaseEntity implements Serializable {
     @Column(nullable = true)
     private String avatarID;
 
-    @OneToMany
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.REFRESH})
+    @JoinTable(name = "friends",
+            joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)},
+            inverseJoinColumns = {@JoinColumn(name = "friend_id", referencedColumnName = "id", nullable = false)})
     @ToString.Exclude
     private Set<User> friends;
 
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER)
     @ToString.Exclude
     private Set<Score> scores;
 
