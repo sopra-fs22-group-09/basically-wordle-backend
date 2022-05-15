@@ -83,7 +83,7 @@ public class WordsRepository {
                 String inputLine;
                 while((inputLine = input.readLine()) != null) {
                     for (Object j : (JSONArray) new JSONParser().parse(inputLine)) {
-                        String word = ((JSONObject) j).get("word").toString();
+                        String word = ((JSONObject) j).get("word").toString().toUpperCase();
                         // Don't establish a connection to redis every time
                         // Instead collect all words and put them all together to redis
                         tmp.put(word, word);
