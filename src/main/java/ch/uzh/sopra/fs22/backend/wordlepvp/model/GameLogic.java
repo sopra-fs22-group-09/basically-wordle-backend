@@ -3,6 +3,8 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 import graphql.GraphQLException;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
@@ -45,7 +47,7 @@ public abstract class GameLogic implements Game, Serializable {
     @Override
     public GameRound guess(Player player, String word) {
         if (!Arrays.asList(this.repoWords).contains(word)) {
-            throw new GraphQLException("Word is not in todays cached wordlist!");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Word is not in todays cached wordlist!");
         }
         GameRound currentGameRound = this.game.get(player).makeGuess(word);
         // FIXME: Handle NPE
