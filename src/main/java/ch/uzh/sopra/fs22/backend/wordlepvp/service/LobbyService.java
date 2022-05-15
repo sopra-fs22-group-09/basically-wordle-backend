@@ -11,16 +11,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Transactional
@@ -28,11 +26,13 @@ public class LobbyService {
 
     private final LobbyRepository lobbyRepository;
     private final PlayerRepository playerRepository;
+    private final Map<String, Disposable> lobbyDeletion;
 
     @Autowired
     public LobbyService(LobbyRepository lobbyRepository, PlayerRepository playerRepository) {
         this.lobbyRepository = lobbyRepository;
         this.playerRepository = playerRepository;
+        this.lobbyDeletion  = new HashMap<>();
     }
 
     public Mono<Lobby> getLobbyById(String lobbyId) {
@@ -42,7 +42,7 @@ public class LobbyService {
     public Mono<Lobby> initializeLobby(LobbyInput input, Mono<Player> player) {
 
         if (input.getSize() > input.getGameCategory().getMaxGameSize()) {
-            throw new GraphQLException("Lobby size is too big.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby size is too big.");
         }
 
         return player.publishOn(Schedulers.boundedElastic()).map(p -> {
@@ -64,20 +64,26 @@ public class LobbyService {
 
     }
 
-    //TODO: should not be able to be in multiple lobbies !!!
     public Mono<Lobby> addPlayerToLobby(String id, Mono<Player> player) {
 
         return this.lobbyRepository.getLobby(id)
                 .zipWith(player, (l, p) -> {
                     if (l.getStatus().equals(LobbyStatus.INGAME)) {
-                        throw new GraphQLException("Cannot join a lobby that is in game!");
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join a lobby that is in game!");
                     }
                     if (l.getStatus().equals(LobbyStatus.FULL)) {
-                        throw new GraphQLException("Cannot join a full Lobby!");
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join a full lobby!");
                     }
                     p.setLobbyId(id);
                     this.playerRepository.savePlayer(p).subscribe(); //Chamer de subscribe echt irgendwie ersetze?
                     l.getPlayers().add(p);
+
+                    Map<String, Disposable> lobbyDisposable = this.lobbyDeletion;
+                    if (lobbyDisposable.get(id) != null) {
+                        lobbyDisposable.get(id).dispose();
+                        this.lobbyDeletion.remove(id);
+                        l.setOwner(p);
+                    }
                     l.setTimeout(3600L);
 
                     if (l.getPlayers().size() >= l.getSize()) {
@@ -96,10 +102,10 @@ public class LobbyService {
                 .flatMap(this.lobbyRepository::getLobby)
                 .zipWith(player, (l, p) -> {
                     if (!Objects.equals(l.getOwner().getId(), p.getId())) {
-                        throw new GraphQLException("Only Lobby owner is allowed to change settings!");
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to change settings!");
                     }
                     if (GameCategory.valueOf(input.getGameMode().getCategory()) != l.getGameCategory()) {
-                        throw new GraphQLException("GameMode is not supported by current GameCategory!");
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "GameMode is not supported by current GameCategory!");
                     }
                     return l;
                 })
@@ -145,18 +151,14 @@ public class LobbyService {
                                 l.setOwner(l.getPlayers().stream().findFirst().get());
                             }
 
+                            this.lobbyRepository.saveLobby(l).subscribe();
                             if (l.getPlayers().isEmpty()) {
                                 //l.setTimeout(10L);
-                                this.lobbyRepository.saveLobby(l).subscribe();
-                                this.lobbyRepository.deleteLobby(l.getId())
-                                        .delaySubscription(Duration.ofSeconds(5L))
-                                        .zipWith(this.lobbyRepository.getLobby(id))
-                                        .filter(ll -> ll.getT2().getPlayers().isEmpty())
-                                        .subscribe();
-                            } else {
-                                this.lobbyRepository.saveLobby(l).subscribe();
+                                this.lobbyDeletion.put(l.getId(),
+                                        this.lobbyRepository.deleteLobby(l.getId())
+                                        .delaySubscription(Duration.ofSeconds(10L))
+                                        .subscribe());
                             }
-
                             return l;
                         }).subscribe()
                 )
@@ -180,7 +182,7 @@ public class LobbyService {
             game.setId(lobbyId);
             return game;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new GraphQLException("Could not find Game.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
         }
     }
 
