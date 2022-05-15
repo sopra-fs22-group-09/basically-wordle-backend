@@ -1,6 +1,8 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.util;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
+import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,8 +25,11 @@ public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
 
     private final UserService userService;
 
-    public HeaderInterceptor(UserService userService) {
+    private final PlayerService playerService;
+
+    public HeaderInterceptor(UserService userService, PlayerService playerService) {
         this.userService = userService;
+        this.playerService = playerService;
     }
 
     @Override
@@ -50,19 +55,32 @@ public class HeaderInterceptor implements WebSocketGraphQlInterceptor {
                    java.util.Map (graphql.execution.reactive.SubscriptionPublisher is in unnamed module of loader 'app';
                    java.util.Map is in module java.base of loader 'bootstrap') */
                 Map<String, User> map = response.getData();
+                Map<String, Player> map2 = response.getData();
                 User user = null;
-                if (map == null) return response;
-                if (map.containsKey("register")) {
+                Player player = null;
+                if (map == null && map2 == null) return response;
+                if (map != null && map.containsKey("register")) {
                     user = oMapper.convertValue(map.get("register"), User.class);
-                } else if (map.containsKey("login")) {
+                } else if (map != null && map.containsKey("login")) {
                     user = oMapper.convertValue(map.get("login"), User.class);
                 }
-                if (user == null) return response;
-                String bearerToken = this.userService.authorize(user);
-                response.getResponseHeaders().setBearerAuth(bearerToken);
-                log.debug("Set Authorization header: {}", response.getResponseHeaders().getFirst("Authorization"));
+                else if (map2 != null && map2.containsKey("createGuest")) {
+                    player = oMapper.convertValue(map2.get("createGuest"), Player.class);
+                }
+                if (user == null && player == null) return response;
+                if (user != null) {
+                    String bearerToken = this.userService.authorize(user);
+                    response.getResponseHeaders().setBearerAuth(bearerToken);
+                    log.debug("Set Authorization header: {}", response.getResponseHeaders().getFirst("Authorization"));
+                }
+                if (player != null) {
+                    String bearerToken = this.playerService.authorize(player);
+                    response.getResponseHeaders().setBearerAuth(bearerToken);
+                    log.debug("Set Authorization header: {}", response.getResponseHeaders().getFirst("Authorization"));
+                }
+
             } catch (Exception e) {
-                log.warn(e.getMessage());
+                log.error(e.getMessage());
             }
             return response;
         });

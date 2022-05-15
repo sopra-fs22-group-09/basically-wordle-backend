@@ -2,6 +2,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.UserStatus;
+import ch.uzh.sopra.fs22.backend.wordlepvp.service.GameService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.LobbyService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.UserService;
@@ -34,6 +35,8 @@ public class LobbyController {
     private final UserService userService;
     private final PlayerService playerService;
 
+    private final GameService gameService;
+
     @QueryMapping
     public Flux<Lobby> getLobbies() {
         return this.lobbyService.getLobbies();
@@ -50,18 +53,34 @@ public class LobbyController {
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         // TODO: In lobby?
-        var player = this.playerService.createPlayer(user, id);
+            var player = this.playerService.createPlayer(user, id);
+            var lobby = this.lobbyService.getLobbyById(id);
+
+            return player.zipWith(lobby)
+                    .filter(pl -> !pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
+                    .map(Tuple2::getT1)
+                    .publishOn(Schedulers.boundedElastic())
+                    .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.INGAME))
+                    .switchIfEmpty(player)
+                    .zipWith(lobby)
+                    .filter(pl -> pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
+                    .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.CREATING_LOBBY))
+                    .switchIfEmpty(player.zipWith(lobby))
+                    .zipWith(this.lobbyService.addPlayerToLobby(id, player), (p, l) -> l);
+    }
+
+    @MutationMapping
+    public Mono<Lobby> guestJoinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
+        var player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         var lobby = this.lobbyService.getLobbyById(id);
 
         return player.zipWith(lobby)
                 .filter(pl -> !pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
                 .map(Tuple2::getT1)
                 .publishOn(Schedulers.boundedElastic())
-                .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.INGAME))
                 .switchIfEmpty(player)
                 .zipWith(lobby)
                 .filter(pl -> pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
-                .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.CREATING_LOBBY))
                 .switchIfEmpty(player.zipWith(lobby))
                 .zipWith(this.lobbyService.addPlayerToLobby(id, player), (p, l) -> l);
     }
@@ -92,6 +111,19 @@ public class LobbyController {
     public Flux<List<Lobby>> lobbyList(@ContextValue("Authorization") String authHeader) {
         Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.lobbyService.subscribeLobbies();
+    }
+
+    @MutationMapping
+    public boolean leaveGame(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        this.lobbyService.removePlayerFromLobby(id, player);
+        return true;
+    }
+
+    @MutationMapping
+    public Mono<Game> playAgain(@ContextValue("Authorization") String authHeader) {
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.gameService.rejoinLobby(player);
     }
 
     @SubscriptionMapping

@@ -12,6 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.UUID;
+
 @Service
 @Transactional
 public class PlayerService {
@@ -35,6 +39,25 @@ public class PlayerService {
                 .build();
 
         return this.playerRepository.savePlayer(player);
+    }
+
+    public Mono<Player> createPlayer(String lobbyId) {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[4];
+        random.nextBytes(bytes);
+        String username = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes) + " (Guest)";
+
+        Player player = Player.builder()
+                .id(UUID.randomUUID().toString())
+                .name(username)
+                .lobbyId(lobbyId)
+                .build();
+
+        return this.playerRepository.savePlayer(player);
+    }
+
+    public String authorize(Player player) {
+        return authRepository.setAuthToken(player);
     }
 
     public Mono<Player> getFromToken(String token) {

@@ -15,14 +15,18 @@ type Mutation {
     logout: Boolean!
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
+    createGuest: Player
     #updateUserProfile(input: UserSettingsInput!): User
     addFriend(friendId: ID!): Boolean
     tutorialFinished: Boolean!
 
     createLobby(input: LobbyInput!): Lobby
     joinLobbyById(id: ID!): Lobby
+    guestJoinLobbyById(id: ID!): Lobby
     #deleteLobby(id: ID!): Boolean
     updateLobbySettings(input: GameSettingsInput!): Lobby
+    leaveGame(id: ID!): Boolean
+    playAgain: Game
     #sendLobbyMessage(message: String!): String
     inviteToLobby(input: LobbyInviteInput!): Boolean
 

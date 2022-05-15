@@ -1,5 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.User;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,12 @@ public class AuthRepository {
 
     public boolean isAuthorized(String token) {
         return redisTemplate.opsForValue().setIfPresent(token, redisTemplate.opsForValue().get(token), logoutAfter);
+    }
+
+    public String setAuthToken(Player player) {
+        String authToken = UUID.randomUUID().toString();
+        redisTemplate.opsForValue().set(authToken, UUID.fromString(player.getId()), logoutAfter);
+        return authToken;
     }
 
     public boolean isPretendUser (User user, String token) {

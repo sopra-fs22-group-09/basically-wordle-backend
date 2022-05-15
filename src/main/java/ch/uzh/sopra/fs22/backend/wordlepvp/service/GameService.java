@@ -103,6 +103,18 @@ public class GameService {
 
     }
 
+    public Mono<Game> rejoinLobby(Mono<Player> player) {
+
+        return player.mapNotNull(Player::getLobbyId)
+                .flatMap(this.gameRepository::getGame)
+                .zipWith(player, (g, p) -> {
+                    g.getPlayers().forEach(t -> g.setGameStatus(t, GameStatus.NEW));
+                    return g;
+                })
+                .flatMap(this.gameRepository::saveGame)
+                .log();
+    }
+
     public Flux<GameRound[]> getOpponentGameRounds(Mono<Player> player) {
 
         return player.map(Player::getLobbyId)
