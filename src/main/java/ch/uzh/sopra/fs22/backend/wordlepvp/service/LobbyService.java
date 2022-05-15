@@ -2,8 +2,10 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.PlayerRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.GameSettingsInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
+import graphql.GraphQLException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,10 +27,12 @@ import java.util.UUID;
 public class LobbyService {
 
     private final LobbyRepository lobbyRepository;
+    private final PlayerRepository playerRepository;
 
     @Autowired
-    public LobbyService(LobbyRepository lobbyRepository) {
+    public LobbyService(LobbyRepository lobbyRepository, PlayerRepository playerRepository) {
         this.lobbyRepository = lobbyRepository;
+        this.playerRepository = playerRepository;
     }
 
     public Mono<Lobby> getLobbyById(String lobbyId) {
@@ -38,22 +42,8 @@ public class LobbyService {
     public Mono<Lobby> initializeLobby(LobbyInput input, Mono<Player> player) {
 
         if (input.getSize() > input.getGameCategory().getMaxGameSize()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby size is too big.");
+            throw new GraphQLException("Lobby size is too big.");
         }
-
-        /*Lobby lobby = Lobby.builder()
-                .id(UUID.randomUUID().toString())
-                .name(input.getName())
-                .size(input.getSize())
-                //.owner(p)
-                .status(LobbyStatus.OPEN)
-                .gameCategory(input.getGameCategory())
-                .gameMode(input.getGameCategory().getDefaultGameMode())
-                .players(new HashSet<>())
-                .build();
-        lobby.setGame(this.createGame(lobby.getId(), lobby.getGameMode()));
-
-        return this.lobbyRepository.saveLobby(lobby).log();*/
 
         return player.publishOn(Schedulers.boundedElastic()).map(p -> {
             Lobby lobby = Lobby.builder()
@@ -79,15 +69,14 @@ public class LobbyService {
 
         return this.lobbyRepository.getLobby(id)
                 .zipWith(player, (l, p) -> {
-                    if (l.getStatus().equals(LobbyStatus.FULL)) {
-                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby is already full.");
-                    }
                     if (l.getStatus().equals(LobbyStatus.INGAME)) {
-                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby is already in game.");
+                        throw new GraphQLException("Cannot join a lobby that is in game!");
                     }
-//                    if (l.getPlayers().size() == 0) {
-//                        l.setOwner(p);
-//                    }
+                    if (l.getStatus().equals(LobbyStatus.FULL)) {
+                        throw new GraphQLException("Cannot join a full Lobby!");
+                    }
+                    p.setLobbyId(id);
+                    this.playerRepository.savePlayer(p).subscribe(); //Chamer de subscribe echt irgendwie ersetze?
                     l.getPlayers().add(p);
                     l.setTimeout(3600L);
 
@@ -107,10 +96,10 @@ public class LobbyService {
                 .flatMap(this.lobbyRepository::getLobby)
                 .zipWith(player, (l, p) -> {
                     if (!Objects.equals(l.getOwner().getId(), p.getId())) {
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only Lobby owner is allowed to change settings!");
+                        throw new GraphQLException("Only Lobby owner is allowed to change settings!");
                     }
                     if (GameCategory.valueOf(input.getGameMode().getCategory()) != l.getGameCategory()) {
-                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "GameMode is not supported by current GameCategory!");
+                        throw new GraphQLException("GameMode is not supported by current GameCategory!");
                     }
                     return l;
                 })
@@ -140,12 +129,14 @@ public class LobbyService {
     // TODO: Check whether lobby full and reject
     public Flux<Lobby> subscribeLobby(String id, Mono<Player> player) {
         return this.lobbyRepository.getLobbyStream(id)
+                //.filter(l -> l.getStatus() == LobbyStatus.OPEN) //@elvio das gaht nid, all andere subs werded au gfiltered
                 .publishOn(Schedulers.boundedElastic())
-                .doFinally(s -> this.lobbyRepository.getAllLobbies()
+                .doFinally(ignored -> this.lobbyRepository.getLobby(id)
                         .publishOn(Schedulers.boundedElastic())
                         .zipWith(player, (l, p) -> {
                             l.getPlayers().remove(p);
-                            if (l.getStatus().equals(LobbyStatus.FULL)) {
+
+                            if (l.getPlayers().size() < l.getSize() && l.getStatus() != LobbyStatus.INGAME) {
                                 l.setStatus(LobbyStatus.OPEN);
                             }
 
@@ -154,12 +145,16 @@ public class LobbyService {
                                 l.setOwner(l.getPlayers().stream().findFirst().get());
                             }
 
-                            this.lobbyRepository.saveLobby(l).subscribe();
                             if (l.getPlayers().isEmpty()) {
                                 //l.setTimeout(10L);
+                                this.lobbyRepository.saveLobby(l).subscribe();
                                 this.lobbyRepository.deleteLobby(l.getId())
-                                        .filter(lobby -> l.getPlayers().isEmpty())
-                                        .delaySubscription(Duration.ofSeconds(10L)).subscribe();
+                                        .delaySubscription(Duration.ofSeconds(5L))
+                                        .zipWith(this.lobbyRepository.getLobby(id))
+                                        .filter(ll -> ll.getT2().getPlayers().isEmpty())
+                                        .subscribe();
+                            } else {
+                                this.lobbyRepository.saveLobby(l).subscribe();
                             }
 
                             return l;
@@ -185,7 +180,7 @@ public class LobbyService {
             game.setId(lobbyId);
             return game;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
+            throw new GraphQLException("Could not find Game.");
         }
     }
 

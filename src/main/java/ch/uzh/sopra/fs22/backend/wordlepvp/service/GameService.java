@@ -5,6 +5,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.GameTimerTask;
+import graphql.GraphQLException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,11 @@ public class GameService {
     public Mono<Game> initializeGame(Mono<Player> player) {
 
         return player.zipWhen(p -> this.lobbyRepository.getLobby(p.getLobbyId()))
+                .doOnNext(pl -> {
+                    if (pl.getT2().getPlayers().size() < 2 && pl.getT2().getGameCategory() != GameCategory.SOLO) {
+                        throw new GraphQLException("Cannot start a multiplayer game alone!");
+                    }
+                })
                 .filter(t -> t.getT2().getGameCategory() == GameCategory.SOLO
                         && t.getT2().getGame().getGameStatus(t.getT1()) != GameStatus.GUESSING)
                 .doOnNext(t -> t.getT2().getGame().setGameStatus(t.getT1(), GameStatus.GUESSING))
@@ -46,7 +52,7 @@ public class GameService {
                 .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT2()), (lp, p) -> lp)
                 .switchIfEmpty(player.zipWhen(p -> this.lobbyRepository.getLobby(p.getLobbyId())))
                 .filter(t -> t.getT2().getGame().getGameStatus(t.getT1()) == GameStatus.GUESSING)
-                .map(l -> l.getT2().getGame().start(l.getT2().getPlayers(), this.wordsRepository.getRandomWords(250)))
+                .map(l -> l.getT2().getGame().start(l.getT2().getPlayers(), this.wordsRepository.getRandomWords(500)))
                 .map(g -> {
                     if (g.getMaxTime() == 0) {
                         return g;
