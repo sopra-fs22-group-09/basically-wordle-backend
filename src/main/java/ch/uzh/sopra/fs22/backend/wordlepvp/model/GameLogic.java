@@ -1,5 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
+import graphql.GraphQLException;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -43,6 +44,9 @@ public abstract class GameLogic implements Game, Serializable {
 
     @Override
     public GameRound guess(Player player, String word) {
+        if (!Arrays.asList(this.repoWords).contains(word)) {
+            throw new GraphQLException("Word is not in todays cached wordlist!");
+        }
         GameRound currentGameRound = this.game.get(player).makeGuess(word);
         // FIXME: Handle NPE
         if (this.currentGameStatus.get(player).equals(GameStatus.WAITING)

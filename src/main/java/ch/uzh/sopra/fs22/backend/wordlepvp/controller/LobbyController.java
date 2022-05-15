@@ -42,7 +42,7 @@ public class LobbyController {
     @MutationMapping
     public Mono<Lobby> createLobby(@Argument @Valid LobbyInput input, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        Mono<Player> player = this.playerService.createPlayer(user, null);
+        Mono<Player> player = this.playerService.createPlayer(user);
         return this.lobbyService.initializeLobby(input, player);
     }
 
@@ -50,7 +50,7 @@ public class LobbyController {
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         // TODO: In lobby?
-        var player = this.playerService.createPlayer(user, id);
+        var player = this.playerService.createPlayer(user);
         var lobby = this.lobbyService.getLobbyById(id);
 
         return player.zipWith(lobby)
