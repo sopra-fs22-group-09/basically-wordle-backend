@@ -98,9 +98,10 @@ public class LobbyController {
     public Flux<Lobby> lobby(@Argument @Valid String id, @ContextValue("Authorization") String authHeader) {
         String token = AuthorizationHelper.extractAuthToken(authHeader);
         Mono<Player> player = this.playerService.getFromToken(token);
+        User user = this.userService.getFromToken(token);
         return this.lobbyService.subscribeLobby(id, player)
                 .publishOn(Schedulers.boundedElastic())
-                .doFinally(ignored -> this.userService.setUserStatus(this.userService.getFromToken(token).getId(), UserStatus.ONLINE));
+                .doFinally(ignored -> this.userService.setUserStatus(user.getId(), UserStatus.ONLINE));
     }
 
     @SubscriptionMapping
