@@ -205,9 +205,8 @@ public class UserService {
 
         // TODO: Notify other user that we're now friends.
         friendToAdd.get().getFriends().add(user);
-//        this.userRepository.saveAndFlush(friendToAdd.get());
         user.getFriends().add(friendToAdd.get());
-        this.userRepository.saveAndFlush(user);
+        this.userRepository.saveAllAndFlush(List.of(user, friendToAdd.get()));
         this.friendsRepository.broadcastFriendsEvent(user).subscribe();
         return friends(user);
     }
