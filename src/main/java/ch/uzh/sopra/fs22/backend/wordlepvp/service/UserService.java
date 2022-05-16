@@ -196,12 +196,14 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The given friendId is invalid.");
         }
 
+        // FIXME: Handle more edge cases
         if (friendToAdd.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The given friendId is invalid.");
 
         if (friendToAdd.get().equals(user)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "We already established that you have no friends.");
 
+        if (user.getFriends().contains(friendToAdd.get())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This user is already a friend.");
+
         // TODO: Notify other user that we're now friends.
-        // FIXME: Handle edge cases
         friendToAdd.get().getFriends().add(user);
         user.getFriends().add(friendToAdd.get());
         this.userRepository.saveAndFlush(user);
