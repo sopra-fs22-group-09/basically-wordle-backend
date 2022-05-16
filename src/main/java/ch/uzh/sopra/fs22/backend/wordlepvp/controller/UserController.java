@@ -64,7 +64,7 @@ public class UserController {
     }
 
     @MutationMapping
-    public boolean addFriend(@Argument @Valid String friendId, @ContextValue(name = "Authorization") String authHeader) {
+    public List<User> addFriend(@Argument @Valid String friendId, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         return this.userService.addFriend(friendId, user);
     }
