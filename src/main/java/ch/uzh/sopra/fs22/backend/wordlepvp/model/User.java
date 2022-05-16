@@ -37,7 +37,7 @@ public class User extends BaseEntity implements Serializable {
     @Column(nullable = false)
     private String passwordHash;
 
-    @Column(nullable = true)
+    @Column
     private String avatarID;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.REFRESH, CascadeType.PERSIST})
@@ -60,11 +60,11 @@ public class User extends BaseEntity implements Serializable {
 
     //TODO EIG JSON ..
 //    @Column(nullable = false)
-    @Column(nullable = true)
+    @Column
     private String settings;
 
     //    @Column(nullable = false)
-    @Column(nullable = true)
+    @Column
     private UserStatus status;
 
     //    @Column(nullable = false)
@@ -72,7 +72,7 @@ public class User extends BaseEntity implements Serializable {
     private boolean activated;
 
     //    @Column(nullable = false)
-    @Column(nullable = true)
+    @Column
     private String resetToken;
 
     @Override
