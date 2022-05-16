@@ -186,7 +186,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password does not meet minimum password criteria.");
     }
 
-    public boolean addFriend(String friendId, User user) {
+    public List<User> addFriend(String friendId, User user) {
         if (friendId == null || friendId.isEmpty())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No friendId provided.");
         Optional<User> friendToAdd;
@@ -205,11 +205,11 @@ public class UserService {
 
         // TODO: Notify other user that we're now friends.
         friendToAdd.get().getFriends().add(user);
-        this.userRepository.saveAndFlush(friendToAdd.get());
+//        this.userRepository.saveAndFlush(friendToAdd.get());
         user.getFriends().add(friendToAdd.get());
         this.userRepository.saveAndFlush(user);
         this.friendsRepository.broadcastFriendsEvent(user).subscribe();
-        return true;
+        return friends(user);
     }
 
     public List<User> friends(UserStatus status, User user) {

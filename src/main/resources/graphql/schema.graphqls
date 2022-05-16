@@ -16,7 +16,7 @@ type Mutation {
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
     #updateUserProfile(input: UserSettingsInput!): User
-    addFriend(friendId: ID!): Boolean
+    addFriend(friendId: ID!): [User]
     tutorialFinished: Boolean!
 
     createLobby(input: LobbyInput!): Lobby
