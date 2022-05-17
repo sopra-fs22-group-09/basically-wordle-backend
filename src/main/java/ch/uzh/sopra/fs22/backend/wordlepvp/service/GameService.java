@@ -42,7 +42,7 @@ public class GameService {
         return player.zipWhen(p -> this.lobbyRepository.getLobby(p.getLobbyId()))
                 .doOnNext(pl -> {
                     if (pl.getT2().getPlayers().size() < 2 && pl.getT2().getGameCategory() != GameCategory.SOLO) {
-                        throw new GraphQLException("Cannot start a multiplayer game alone!");
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot start a multiplayer game alone!");
                     }
                 })
                 .filter(t -> t.getT2().getGameCategory() == GameCategory.SOLO
@@ -119,7 +119,7 @@ public class GameService {
 
     }
 
-    public Mono<Game> markStandBy(Mono<Player> player) {
+    public Mono<Boolean> markStandBy(Mono<Player> player) {
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .filter(l -> l.getGameCategory() == GameCategory.SOLO)
@@ -156,7 +156,7 @@ public class GameService {
                 .switchIfEmpty(player.map(Player::getLobbyId).flatMap(this.lobbyRepository::getLobby).map(Lobby::getGame))
                 .onErrorMap(e -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "Something went terribly wrong."))
-                .log();
-                //.then(Mono.just(true));
+                .log()
+                .then(Mono.just(true));
     }
 }

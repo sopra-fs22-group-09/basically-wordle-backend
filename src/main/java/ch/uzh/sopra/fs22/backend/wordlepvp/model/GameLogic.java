@@ -57,6 +57,7 @@ public abstract class GameLogic implements Game, Serializable {
         }
         if (currentGameRound.getFinish() != 0L) {
             if (this.maxRounds == 0) {
+                //TODO probably need to remove this condition
                 if (this.amountRounds == 0) {
                     endRound();
                 }

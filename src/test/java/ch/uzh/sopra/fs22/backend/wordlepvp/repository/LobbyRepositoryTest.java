@@ -1,9 +1,8 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.RedisConfig;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameCategory;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Lobby;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.LobbyStatus;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,12 +16,16 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.HashSet;
+import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static reactor.core.publisher.Mono.when;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @DataRedisTest
@@ -50,7 +53,16 @@ public class LobbyRepositoryTest {
     LobbyRepository lobbyRepository;
 
     @Autowired
-    ReactiveRedisOperations<String, Lobby> reactiveRedisOperations;
+    ReactiveRedisOperations<String, Lobby> reactiveLobbyRedisOperations;
+
+    @Autowired
+    ReactiveRedisOperations<String, LobbyInvite> reactiveLobbyInviteRedisOperations;
+
+    @AfterEach
+    void breakdown() {
+        this.reactiveLobbyRedisOperations.opsForHash().delete("lobbies").subscribe();
+        this.reactiveLobbyInviteRedisOperations.opsForHash().delete("invites").subscribe();
+    }
 
     @Test
     void testContainersRunning() {
@@ -72,7 +84,7 @@ public class LobbyRepositoryTest {
                 .build();
         this.lobbyRepository.saveLobby(testLobby).subscribe();
 
-        Mono<Lobby> lobby = this.reactiveRedisOperations.<String, Lobby>opsForHash()
+        Mono<Lobby> lobby = this.reactiveLobbyRedisOperations.<String, Lobby>opsForHash()
                 .get("lobbies", "deadbeef-dead-beef-caff-deadbeefcaff");
 
         StepVerifier.create(lobby)
@@ -93,8 +105,9 @@ public class LobbyRepositoryTest {
                 .gameMode(GameCategory.PVP.getDefaultGameMode())
                 .players(new HashSet<>())
                 .build();
-        this.reactiveRedisOperations.<String, Lobby>opsForHash()
-                .put("lobbies", testLobby.getId(), testLobby);
+        this.reactiveLobbyRedisOperations.<String, Lobby>opsForHash()
+                .put("lobbies", testLobby.getId(), testLobby)
+                .subscribe();
 
         Mono<Long> deleted = this.lobbyRepository.deleteLobby("deadbeef-dead-beef-caff-deadbeefcaff");
 
@@ -116,7 +129,7 @@ public class LobbyRepositoryTest {
                 .gameMode(GameCategory.PVP.getDefaultGameMode())
                 .players(new HashSet<>())
                 .build();
-        this.reactiveRedisOperations.<String, Lobby>opsForHash()
+        this.reactiveLobbyRedisOperations.<String, Lobby>opsForHash()
                 .put("lobbies", testLobby.getId(), testLobby).subscribe();
 
         Mono<Lobby> lobby = this.lobbyRepository.getLobby("deadbeef-dead-beef-caff-deadbeefcaff");
@@ -126,4 +139,123 @@ public class LobbyRepositoryTest {
                 .verifyComplete();
     }
 
+    @Test
+    public void getLobbyStreamTest() {
+
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(null)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .players(new HashSet<>())
+                .build();
+
+        Mono<Lobby> lobby = this.reactiveLobbyRedisOperations.<String, Lobby>opsForHash()
+                .put("lobbies", testLobby.getId(), testLobby)
+                .map(l -> testLobby)
+                .flatMap(l -> this.reactiveLobbyRedisOperations.convertAndSend("lobby/" + l.getId(), l).thenReturn(testLobby));
+
+        this.lobbyRepository.getLobbyStream("deadbeef-dead-beef-caff-deadbeefcaff")
+                .as(lobbyFlux -> StepVerifier.create(lobby))
+                .expectNext(testLobby)
+                .thenAwait()
+                .thenCancel()
+                .verify();
+    }
+
+    @Test
+    public void getAllLobbiesTest() {
+
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(null)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .players(new HashSet<>())
+                .build();
+        this.reactiveLobbyRedisOperations.<String, Lobby>opsForHash()
+                .put("lobbies", testLobby.getId(), testLobby).subscribe();
+
+        Flux<Lobby> lobby = this.lobbyRepository.getAllLobbies();
+
+        StepVerifier.create(lobby)
+                .expectNext(testLobby)
+                .verifyComplete();
+    }
+
+    @Test
+    public void getAllLobbiesStreamTest() {
+
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(null)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .players(new HashSet<>())
+                .build();
+
+        Mono<Lobby> lobby = this.reactiveLobbyRedisOperations.<String, Lobby>opsForHash()
+                .put("lobbies", testLobby.getId(), testLobby)
+                .map(l -> testLobby)
+                .flatMap(l -> this.reactiveLobbyRedisOperations.convertAndSend("lobbies" + l.getId(), l).thenReturn(testLobby));
+
+        this.lobbyRepository.getAllLobbiesStream()
+                .as(lobbyFlux -> StepVerifier.create(lobby))
+                .expectNext(testLobby)
+                .thenAwait()
+                .thenCancel()
+                .verify();
+    }
+
+    @Test
+    public void getInvitesStreamTest() {
+
+        UUID testRecipientId = UUID.randomUUID();
+        LobbyInvite testLobbyInvite = LobbyInvite.builder()
+                .id(UUID.randomUUID().toString())
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .senderId("sender")
+                .recipientId(testRecipientId.toString())
+                .build();
+        User testRecipient = User.builder()
+                .id(testRecipientId)
+                .build();
+
+        Mono<LobbyInvite> lobbyInvite = this.reactiveLobbyInviteRedisOperations.<String, LobbyInvite>opsForHash()
+                .put("invites", testLobbyInvite.getId(), testLobbyInvite)
+                .map(i -> testLobbyInvite)
+                .flatMap(i -> this.reactiveLobbyInviteRedisOperations.convertAndSend("invite/" + i.getRecipientId(), i).thenReturn(testLobbyInvite));
+
+        this.lobbyRepository.getInvitesStream(testRecipient)
+                .as(lobbyInviteFlux -> StepVerifier.create(lobbyInvite))
+                .expectNext(testLobbyInvite)
+                .thenAwait()
+                .thenCancel()
+                .verify();
+    }
+
+    @Test
+    public void inviteToLobbyTest() {
+
+        LobbyInvite lobbyInvite = LobbyInvite.builder()
+                .id(UUID.randomUUID().toString())
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .senderId("sender")
+                .recipientId("recipient")
+                .build();
+        Mono<Boolean> invite = this.lobbyRepository.inviteToLobby(lobbyInvite);
+
+        StepVerifier.create(invite)
+                .expectNext(true)
+                .verifyComplete();
+    }
 }
