@@ -73,10 +73,13 @@ public abstract class GameLogic implements Game, Serializable {
     @Override
     public GameRound endRound() {
         currentGameStatus.replaceAll((p, gs) -> GameStatus.WAITING);
-        if (this.game.values().stream().findFirst().isEmpty()) {
+        GameRound currentGameRound = null;
+        Optional<GameRound> currentGameRoundOptional = this.game.values().stream().findFirst();
+        if (currentGameRoundOptional.isPresent()) {
+            currentGameRound = currentGameRoundOptional.get();
+        } else {
             return null;
         }
-        GameRound currentGameRound = this.game.values().stream().findFirst().get();
         int nextRound = currentGameRound.getCurrentRound() + 1;
         if (this.maxTime == 0) {
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);
