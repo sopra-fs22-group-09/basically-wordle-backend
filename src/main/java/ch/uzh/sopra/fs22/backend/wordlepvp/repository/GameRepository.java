@@ -36,11 +36,10 @@ public class GameRepository {
                 .log();
     }
 
-    public void deleteGame(String id) {
-        this.reactiveGameRedisTemplate.<String, Game>opsForHash()
-                .remove("games", id)
+    public Mono<Long> deleteGame(String id) {
+        return this.reactiveGameRedisTemplate.<String, Game>opsForHash()
+                .remove("games", id);
                 //.publishOn(Schedulers.boundedElastic()) //needed?
-                .subscribe();
     }
 
     public Mono<Game> getGame(String id) {
