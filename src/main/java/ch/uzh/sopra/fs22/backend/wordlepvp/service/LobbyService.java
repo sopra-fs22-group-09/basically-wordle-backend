@@ -1,6 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
+import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.PlayerRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.GameSettingsInput;
@@ -25,12 +26,14 @@ import java.util.*;
 public class LobbyService {
 
     private final LobbyRepository lobbyRepository;
+    private final GameRepository gameRepository;
     private final PlayerRepository playerRepository;
     private final Map<String, Disposable> lobbyDeletion;
 
     @Autowired
-    public LobbyService(LobbyRepository lobbyRepository, PlayerRepository playerRepository) {
+    public LobbyService(LobbyRepository lobbyRepository, GameRepository gameRepository, PlayerRepository playerRepository) {
         this.lobbyRepository = lobbyRepository;
+        this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.lobbyDeletion  = new HashMap<>();
     }
@@ -64,6 +67,21 @@ public class LobbyService {
 
     }
 
+    public Mono<Boolean> reinitializeLobby(Mono<Player> player) {
+
+        return player.map(Player::getLobbyId)
+                .flatMap(this.lobbyRepository::getLobby)
+                .map(l -> {
+                    l.setStatus(l.getPlayers().size() >= l.getSize() ? LobbyStatus.FULL : LobbyStatus.OPEN);
+                    l.setGame(this.createGame(l.getId(), l.getGameMode()));
+                    return l;
+                })
+                .flatMap(this.lobbyRepository::saveLobby)
+                .flatMap(l -> this.gameRepository.broadcastGameStatus(l.getGame(), GameStatus.NEW).thenReturn(l))
+                .then(Mono.just(true))
+                .log();
+
+    }
     public Mono<Lobby> addPlayerToLobby(String id, Mono<Player> player) {
 
         return this.lobbyRepository.getLobby(id)

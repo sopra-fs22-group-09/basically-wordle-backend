@@ -17,7 +17,7 @@ public class GameTimerTask extends TimerTask {
 
     @Override
     public void run() {
-        game.endRound();
-        gameRepository.saveGame(game).subscribe();
+        this.game.endRound();
+        this.gameRepository.saveGame(this.game).subscribe();
     }
 }

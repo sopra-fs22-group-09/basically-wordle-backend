@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -27,7 +28,7 @@ public class GameService {
     private final GameRepository gameRepository;
     private final LobbyRepository lobbyRepository;
     private final WordsRepository wordsRepository;
-    private final Map<Game, Timer> gameTimers;
+    private final Map<String, Timer> gameTimers;
 
     @Autowired
     public GameService(GameRepository gameRepository, LobbyRepository lobbyRepository, WordsRepository wordsRepository) {
@@ -59,7 +60,7 @@ public class GameService {
                     }
                     Timer gameTimer = new Timer();
                     gameTimer.schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
-                    this.gameTimers.put(g, gameTimer);
+                    this.gameTimers.put(g.getId(), gameTimer);
                     return g;
                 })
                 .flatMap(this.gameRepository::saveGame)
@@ -73,13 +74,17 @@ public class GameService {
                 .flatMap(this.gameRepository::getGame)
                 .zipWith(player, (g, p) -> {
                     GameRound gr = g.guess(p, word);
-                    if (gr.getFinish() != 0L) {
-                        if (g.getPlayers().stream().allMatch(players -> g.getGameStatus(players).equals(GameStatus.WAITING))) {
-                            gr = g.endRound();
-                            this.gameTimers.get(g).cancel();
-                            this.gameTimers.get(g).purge();
-                            if (g.getPlayers().stream().noneMatch(players -> g.getGameStatus(players).equals(GameStatus.FINISHED))) {
-                                this.gameTimers.get(g).schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
+                    if (g.getPlayers().stream().allMatch(players -> g.getGameStatus(players).equals(GameStatus.WAITING))) {
+                        g.endRound();
+                        if (g.getMaxTime() != 0) {
+                            if (this.gameTimers.get(g.getId()) != null) {
+                                this.gameTimers.get(g.getId()).cancel();
+                                this.gameTimers.get(g.getId()).purge();
+                                if (g.getPlayers().stream().noneMatch(players -> g.getGameStatus(players).equals(GameStatus.FINISHED))) {
+                                    Timer gameTimer = new Timer();
+                                    gameTimer.schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
+                                    this.gameTimers.put(g.getId(), gameTimer);
+                                }
                             }
                         }
                     }
@@ -101,11 +106,11 @@ public class GameService {
 
     public Flux<GameStatus> getGameStatus(String id, Mono<Player> player) {
 
-        return this.gameRepository.getGameStatusStream(id);
+        //return this.gameRepository.getGameStatusStream(id, player);
 
-/*        return player
-                .flatMapMany(this.gameRepository::getGameStatusStream)
-                .log();*/
+        return player
+                .flatMapMany(p -> this.gameRepository.getGameStatusStream(id, p))
+                .log();
 
     }
 

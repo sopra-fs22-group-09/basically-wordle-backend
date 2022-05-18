@@ -36,14 +36,14 @@ public class GameRound implements Serializable {
             }
         }
         if (this.targetWord.equals(word) || this.currentGuess >= 5) {
-            this.endRound();
+            this.endCurrentRound();
         } else {
             this.currentGuess += 1;
         }
         return this;
     }
 
-    private void endRound() {
+    private void endCurrentRound() {
         this.finish = System.nanoTime();
         this.gameStats.setTargetWord(targetWord);
         long time = this.finish - this.start / 1000000000;

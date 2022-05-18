@@ -47,6 +47,12 @@ public class LobbyController {
     }
 
     @MutationMapping
+    public Mono<Boolean> playAgain(@ContextValue(name = "Authorization") String authHeader) {
+        Mono<Player> player = this.playerService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+        return this.lobbyService.reinitializeLobby(player);
+    }
+
+    @MutationMapping
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
         // TODO: In lobby?

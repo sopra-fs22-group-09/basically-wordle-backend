@@ -26,14 +26,17 @@ public class GameRepository {
                 .map(g -> game)
                 .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + g.getId(), g).thenReturn(g))
                 .flatMapIterable(Game::getPlayers)
+                .flatMap(p -> this.broadcastGameStatusSingle(p.getId(), game.getGameStatus(p)).thenReturn(p))
+                .then(Mono.just(game));
+/*                .flatMapIterable(Game::getPlayers)
                 .all(p -> game.getGameStatus(p) == GameStatus.GUESSING)
                 .flatMap(p -> p ? Mono.defer(() -> this.broadcastGameStatus(game, GameStatus.GUESSING)) : Mono.empty())
                 .thenReturn(game)
                 .flatMapIterable(Game::getPlayers)
                 .filter(p -> game.getGameStatus(p) != GameStatus.GUESSING)
-                .flatMap(p -> Mono.defer(() -> this.broadcastGameStatus(game, game.getGameStatus(p))))
+                .flatMap(p -> Mono.defer(() -> this.broadcastGameStatusSingle(p.getId(), game.getGameStatus(p))))
                 .then(Mono.just(game))
-                .log();
+                .log();*/
     }
 
     public Mono<Long> deleteGame(String id) {
@@ -48,9 +51,9 @@ public class GameRepository {
                 .log();
     }
 
-    public Flux<GameStatus> getGameStatusStream(String id) {
+    public Flux<GameStatus> getGameStatusStream(String id, Player player) {
         // FIXME: Use Game ID in the future
-        return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/game/" + id/*, "gameSync/player/" + player.getId()*/)
+        return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/game/" + id, "gameSync/player/" + player.getId())
                 .map(ReactiveSubscription.Message::getMessage)
                 .distinctUntilChanged()
                 // Reset after round concludes!
@@ -68,7 +71,7 @@ public class GameRepository {
         return this.reactiveGameStatusRedisTemplate.convertAndSend("gameSync/player/" + playerId, status);
     }
 
-    private Mono<Long> broadcastGameStatus(Game game, GameStatus status) {
+    public Mono<Long> broadcastGameStatus(Game game, GameStatus status) {
         return this.reactiveGameStatusRedisTemplate.convertAndSend("gameSync/game/" + game.getId(), status);
     }
 }
