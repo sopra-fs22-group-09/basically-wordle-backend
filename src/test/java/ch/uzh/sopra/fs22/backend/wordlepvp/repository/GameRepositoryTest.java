@@ -122,6 +122,7 @@ public class GameRepositoryTest {
     @Test
     public void getGameStatusStreamTest() {
 
+        Player testPlayer = Player.builder().build();
         Game testGame = new SonicFast();
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
 
@@ -129,7 +130,7 @@ public class GameRepositoryTest {
                 .convertAndSend("gameSync/game/" + testGame.getId(), GameStatus.NEW)
                 .thenReturn(GameStatus.NEW);
 
-        this.gameRepository.getGameStatusStream("deadbeef-dead-beef-caff-deadbeefcaff")
+        this.gameRepository.getGameStatusStream("deadbeef-dead-beef-caff-deadbeefcaff", testPlayer)
                 .as(lobbyFlux -> StepVerifier.create(gameStatus))
                 .expectNext(GameStatus.NEW)
                 .thenAwait()

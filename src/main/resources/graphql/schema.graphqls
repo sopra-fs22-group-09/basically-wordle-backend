@@ -31,7 +31,7 @@ type Mutation {
 
     announceStandby: Boolean
     submitGuess(word: String!): GameRound
-    #playAgain: ID # I suggest we use the Lobby ID?
+    playAgain: Boolean
 }
 type Subscription {
     lobbyList: [Lobby]

@@ -39,6 +39,7 @@ public abstract class GameLogic implements Game, Serializable {
         Arrays.setAll(targetWords, word -> this.repoWords[r.nextInt(this.repoWords.length)]);
         for (Player player : players) {
             this.game.put(player, new GameRound(player, 0, this.targetWords[0]));
+            this.gameStats.put(player, new GameStats());
         }
 
         return this;
@@ -46,9 +47,9 @@ public abstract class GameLogic implements Game, Serializable {
 
     @Override
     public GameRound guess(Player player, String word) {
-        if (!Arrays.asList(this.repoWords).contains(word)) {
+/*        if (!Arrays.asList(this.repoWords).contains(word)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Word is not in todays cached wordlist!");
-        }
+        }*/
         GameRound currentGameRound = this.game.get(player).makeGuess(word);
         // FIXME: Handle NPE
         if (this.currentGameStatus.get(player).equals(GameStatus.WAITING)
@@ -56,16 +57,14 @@ public abstract class GameLogic implements Game, Serializable {
             return currentGameRound;
         }
         if (currentGameRound.getFinish() != 0L) {
-            if (this.maxRounds == 0) {
-                //TODO probably need to remove this condition
-                if (this.amountRounds == 0) {
-                    endRound();
-                }
-                int nextRound = currentGameRound.getCurrentRound() + 1;
-                this.game.put(player, new GameRound(player, nextRound, this.targetWords[nextRound]));
-            } else {
+            if (this.maxRounds != 0) {
                 this.currentGameStatus.put(player, GameStatus.WAITING);
             }
+/*            int nextRound = currentGameRound.getCurrentRound() + 1;
+            if (nextRound < this.amountRounds) {
+                this.game.put(player, new GameRound(player, nextRound, this.targetWords[nextRound]));
+                currentGameRound = this.game.get(player);
+            }*/
         }
         return currentGameRound;
     }
@@ -73,7 +72,7 @@ public abstract class GameLogic implements Game, Serializable {
     @Override
     public GameRound endRound() {
         currentGameStatus.replaceAll((p, gs) -> GameStatus.WAITING);
-        GameRound currentGameRound = null;
+        GameRound currentGameRound;
         Optional<GameRound> currentGameRoundOptional = this.game.values().stream().findFirst();
         if (currentGameRoundOptional.isPresent()) {
             currentGameRound = currentGameRoundOptional.get();

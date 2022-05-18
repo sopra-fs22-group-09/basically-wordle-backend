@@ -176,7 +176,7 @@ public class GameServiceTest {
                 .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
                 .build();
 
-        when(gameRepository.getGameStatusStream(Mockito.anyString())).thenReturn(Flux.just(GameStatus.GUESSING));
+        when(gameRepository.getGameStatusStream(Mockito.anyString(), Mockito.any())).thenReturn(Flux.just(GameStatus.GUESSING));
 
         Flux<GameStatus> gameStatus = gameService.getGameStatus("deadbeef-dead-beef-caff-deadbeefcaff", Mono.just(testPlayer));
 
