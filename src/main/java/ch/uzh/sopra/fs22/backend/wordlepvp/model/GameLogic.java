@@ -140,6 +140,7 @@ public abstract class GameLogic implements Game, Serializable {
         GameStats gameStats = this.gameStats.get(player);
         gameStats.setTargetWord(this.targetWords[this.game.get(player).getCurrentRound()]);
         gameStats.setTimeTaken(gameStats.getTimeTaken() + roundStats.getTimeTaken());
+        gameStats.setRoundsTaken(this.game.get(player).getCurrentRound() + 1);
         gameStats.setScore(gameStats.getScore() + roundStats.getScore());
         this.gameStats.put(player, gameStats);
     }
