@@ -136,7 +136,8 @@ type LobbyInvite {
 type Game {
     amountRounds: Int
     roundTime: Int
-    targetWords: [String]
+    maxRounds: Int
+    maxTime: Int
     # wordCategories: Categories ??? how
 }
 type GameRound {

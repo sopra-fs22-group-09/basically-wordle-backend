@@ -106,8 +106,6 @@ public class GameService {
 
     public Flux<GameStatus> getGameStatus(String id, Mono<Player> player) {
 
-        //return this.gameRepository.getGameStatusStream(id, player);
-
         return player
                 .flatMapMany(p -> this.gameRepository.getGameStatusStream(id, p))
                 .log();
@@ -119,7 +117,24 @@ public class GameService {
         return player.map(Player::getLobbyId)
                 .flatMapMany(this.gameRepository::getGameStream)
                 .zipWith(player, Game::getCurrentOpponentGameRounds)
-                .repeat(() -> true)
+                .publishOn(Schedulers.boundedElastic())
+                .repeat()
+                .doFinally(ignored -> player
+                        .flatMap(p -> this.gameRepository.getGame(p.getLobbyId()))
+                        .publishOn(Schedulers.boundedElastic())
+                        .zipWith(player, (g, p) -> {
+                            g.getPlayers().remove(p);
+
+                            if (g.getPlayers().isEmpty()) {
+                                if (this.gameTimers.get(g.getId()) != null) {
+                                    this.gameTimers.get(g.getId()).cancel();
+                                    this.gameTimers.get(g.getId()).purge();
+                                }
+                            }
+                            this.gameRepository.saveGame(g).subscribe();
+                            return g;
+                        })
+                        .subscribe())
                 .log();
 
     }
