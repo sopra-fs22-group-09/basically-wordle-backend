@@ -57,8 +57,12 @@ public abstract class GameLogic implements Game, Serializable {
             return currentGameRound;
         }
         if (currentGameRound.getFinish() != 0L) {
-            if (this.maxRounds != 0) {
-                this.currentGameStatus.put(player, GameStatus.WAITING);
+            this.currentGameStatus.put(player, GameStatus.WAITING);
+            if (this.maxRounds == 0) {
+                //Words++
+                int nextRound = currentGameRound.getCurrentRound() + 1;
+                this.game.put(player, new GameRound(player, nextRound, this.targetWords[nextRound]));
+                this.currentGameStatus.put(player, GameStatus.GUESSING);
             }
 /*            int nextRound = currentGameRound.getCurrentRound() + 1;
             if (nextRound < this.amountRounds) {
@@ -80,10 +84,10 @@ public abstract class GameLogic implements Game, Serializable {
             return null;
         }
         int nextRound = currentGameRound.getCurrentRound() + 1;
-        if (this.maxTime == 0) {
-            this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);
-        } else if (this.maxRounds == 0) {
+        if (this.maxTime == 0) { //Classic
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
+/*        } else if (this.maxRounds == 0) { //Words++
+            this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);*/
         } else if (nextRound < this.amountRounds) {
             this.game.forEach((p, g) -> this.saveStats(p));
             this.game.replaceAll((p, gr) -> new GameRound(p, nextRound, this.targetWords[nextRound]));
