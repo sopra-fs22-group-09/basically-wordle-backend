@@ -131,6 +131,9 @@ public class GameService {
                                     this.gameTimers.get(g.getId()).purge();
                                 }
                             }
+                            if (g.getPlayers().stream().allMatch(players -> g.getGameStatus(players).equals(GameStatus.WAITING))) {
+                                g.getPlayers().forEach(players -> g.setGameStatus(players, GameStatus.GUESSING));
+                            }
                             this.gameRepository.saveGame(g).subscribe();
                             return g;
                         })
