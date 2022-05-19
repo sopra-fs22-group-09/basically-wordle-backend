@@ -47,7 +47,7 @@ public class GameRound implements Serializable {
         this.finish = System.nanoTime();
         this.gameStats.setTargetWord(targetWord);
         long time = this.finish - this.start / 1000000000;
-        this.gameStats.setTimeTaken(((time % 3600) / 60) + ":" + (time % 60));
+        this.gameStats.setTimeTaken(time);
         this.gameStats.setScore(100);
     }
 }

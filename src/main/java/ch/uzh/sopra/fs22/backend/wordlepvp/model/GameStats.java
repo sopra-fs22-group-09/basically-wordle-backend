@@ -13,7 +13,7 @@ public class GameStats implements Serializable {
 
     private int roundsTaken;
 
-    private String timeTaken;
+    private long timeTaken;
 
     private int score;
 

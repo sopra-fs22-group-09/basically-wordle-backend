@@ -85,6 +85,7 @@ public abstract class GameLogic implements Game, Serializable {
         }
         int nextRound = currentGameRound.getCurrentRound() + 1;
         if (this.maxTime == 0) { //Classic
+            this.game.forEach((p, g) -> this.saveStats(p));
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
 /*        } else if (this.maxRounds == 0) { //Words++
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);*/
@@ -94,6 +95,7 @@ public abstract class GameLogic implements Game, Serializable {
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);
             currentGameRound = this.game.get(currentGameRound.getPlayer()); //maybe need that the last guesser also gets updated to the new screen
         } else {
+            this.game.forEach((p, g) -> this.saveStats(p));
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
         }
         return currentGameRound;
@@ -101,12 +103,10 @@ public abstract class GameLogic implements Game, Serializable {
 
     @Override
     public GameStats concludeGame(Player player) {
-        if (this.currentGameStatus.get(player).equals(GameStatus.WAITING)) {
-            return this.game.get(player).getGameStats();
-        } else if (this.currentGameStatus.get(player).equals(GameStatus.FINISHED)) {
+        if (this.currentGameStatus.get(player).equals(GameStatus.FINISHED)) {
             return this.gameStats.get(player);
         } else {
-            return null;
+            return this.game.get(player).getGameStats();
         }
     }
 
@@ -138,6 +138,7 @@ public abstract class GameLogic implements Game, Serializable {
     private void saveStats(Player player) {
         GameStats roundStats = this.game.get(player).getGameStats();
         GameStats gameStats = this.gameStats.get(player);
+        gameStats.setTargetWord(this.targetWords[this.game.get(player).getCurrentRound()]);
         gameStats.setTimeTaken(gameStats.getTimeTaken() + roundStats.getTimeTaken());
         gameStats.setScore(gameStats.getScore() + roundStats.getScore());
         this.gameStats.put(player, gameStats);
