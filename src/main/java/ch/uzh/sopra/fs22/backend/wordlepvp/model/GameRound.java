@@ -23,7 +23,7 @@ public class GameRound implements Serializable {
     private long finish;
 
     public GameRound makeGuess(String word) {
-        if (this.finish != 0L) {
+        if (this.guessed) {
             return this;
         }
         this.words[this.currentGuess] = word;
@@ -48,7 +48,7 @@ public class GameRound implements Serializable {
         this.guessed = true;
         this.finish = System.nanoTime();
         this.gameStats.setTargetWord(targetWord);
-        long time = this.finish - this.start / 1000000000;
+        long time = (this.finish - this.start) / 1000000000;
         this.gameStats.setTimeTaken(time);
         int score = (int) (100 - ((int) Math.pow(currentGuess, 1.5) * 4) - (((time % 3600) / 60 ) / 5));
         this.gameStats.setScore(score);
