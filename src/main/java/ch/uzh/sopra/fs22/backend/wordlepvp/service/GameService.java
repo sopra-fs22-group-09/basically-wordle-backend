@@ -59,7 +59,7 @@ public class GameService {
                         return g;
                     }
                     Timer gameTimer = new Timer();
-                    gameTimer.schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
+                    gameTimer.schedule(new GameTimerTask(g.getId(), this.gameRepository), g.getRoundTime() * 1000L);
                     this.gameTimers.put(g.getId(), gameTimer);
                     return g;
                 })
@@ -82,7 +82,7 @@ public class GameService {
                                 this.gameTimers.get(g.getId()).purge();
                                 if (g.getPlayers().stream().noneMatch(players -> g.getGameStatus(players).equals(GameStatus.FINISHED))) {
                                     Timer gameTimer = new Timer();
-                                    gameTimer.schedule(new GameTimerTask(g, this.gameRepository), g.getRoundTime() * 1000L);
+                                    gameTimer.schedule(new GameTimerTask(g.getId(), this.gameRepository), g.getRoundTime() * 1000L);
                                     this.gameTimers.put(g.getId(), gameTimer);
                                 }
                             }
@@ -127,8 +127,7 @@ public class GameService {
 
                             if (g.getPlayers().isEmpty()) {
                                 if (this.gameTimers.get(g.getId()) != null) {
-                                    this.gameTimers.get(g.getId()).cancel();
-                                    this.gameTimers.get(g.getId()).purge();
+                                    this.gameTimers.remove(g.getId());
                                 }
                             }
                             if (g.getPlayers().stream().allMatch(players -> g.getGameStatus(players).equals(GameStatus.WAITING))) {
