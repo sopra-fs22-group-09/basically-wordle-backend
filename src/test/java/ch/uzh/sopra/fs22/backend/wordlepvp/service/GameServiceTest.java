@@ -157,6 +157,7 @@ public class GameServiceTest {
         Game testGame = new WordsPP();
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
         String[] testWords = {"Mules", "Monks", "Apple"};
+        GameStats testStats = new GameStats();
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
 
@@ -165,7 +166,8 @@ public class GameServiceTest {
         Mono<GameStats> gameStats = gameService.getConclusion(Mono.just(testPlayer));
 
         StepVerifier.create(gameStats)
-                .verifyError();
+                .expectNext(testStats)
+                .verifyComplete();
     }
 
     @Test
