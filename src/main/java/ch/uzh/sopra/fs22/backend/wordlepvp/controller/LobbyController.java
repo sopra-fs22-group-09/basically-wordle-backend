@@ -51,8 +51,9 @@ public class LobbyController {
 
     @MutationMapping
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
-        User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        // TODO: In lobby?
+        try {
+            User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
+            // TODO: In lobby?
             var player = this.playerService.createPlayer(user, id);
             var lobby = this.lobbyService.getLobbyById(id);
 
@@ -67,6 +68,10 @@ public class LobbyController {
                     .doOnNext(p -> this.userService.setUserStatus(user.getId(), UserStatus.CREATING_LOBBY))
                     .switchIfEmpty(player.zipWith(lobby))
                     .zipWith(this.lobbyService.addPlayerToLobby(id, player), (p, l) -> l);
+        }
+        catch (Exception ignored) {
+            return null;
+        }
     }
 
     @MutationMapping
@@ -130,9 +135,15 @@ public class LobbyController {
     public Flux<Lobby> lobby(@Argument @Valid String id, @ContextValue("Authorization") String authHeader) {
         String token = AuthorizationHelper.extractAuthToken(authHeader);
         Mono<Player> player = this.playerService.getFromToken(token);
-        return this.lobbyService.subscribeLobby(id, player)
-                .publishOn(Schedulers.boundedElastic())
-                .doFinally(ignored -> this.userService.setUserStatus(this.userService.getFromToken(token).getId(), UserStatus.ONLINE));
+        try {
+            return this.lobbyService.subscribeLobby(id, player)
+                    .publishOn(Schedulers.boundedElastic())
+                    .doFinally(ignored -> this.userService.setUserStatus(this.userService.getFromToken(token).getId(), UserStatus.ONLINE));
+        }
+        catch (Exception ignored){
+            return this.lobbyService.subscribeLobby(id, player)
+                    .publishOn(Schedulers.boundedElastic());
+        }
     }
 
     @SubscriptionMapping

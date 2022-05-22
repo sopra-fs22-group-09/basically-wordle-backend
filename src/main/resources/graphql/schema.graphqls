@@ -15,7 +15,7 @@ type Mutation {
     logout: Boolean!
     reset(input: ResetInput!): User
     resetWithToken(input: ResetTokenInput!): User
-    createGuest: Player
+    createGuest(id: ID!): Player
     #updateUserProfile(input: UserSettingsInput!): User
     addFriend(friendId: ID!): Boolean
     tutorialFinished: Boolean!
