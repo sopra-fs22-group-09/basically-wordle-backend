@@ -14,7 +14,7 @@ public interface Game {
     int getMaxRounds();
     int getMaxTime();
 
-    Game start(Set<Player> players, String[] repoWords);
+    Game start(Set<Player> players, String[] repoWords, String[] allowedWords);
     GameRound guess(Player player, String word);
     GameRound endRound();
     GameStats concludeGame(Player player);

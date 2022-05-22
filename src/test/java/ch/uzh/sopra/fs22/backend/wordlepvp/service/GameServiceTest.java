@@ -85,11 +85,12 @@ public class GameServiceTest {
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
         testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
         String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
 
-        testGame.start(testPlayers, testWords);
+        testGame.start(testPlayers, testWords, allowedWords);
         GameRound testGameRound = null;
         try {
             Field privateField = testGame.getClass().getSuperclass().getDeclaredField("game");
@@ -122,11 +123,12 @@ public class GameServiceTest {
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
         testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
         String[] testWords = {"Mules"};
+        String[] allowedWords = {"Mules"};
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
 
-        testGame.start(testPlayers, testWords);
+        testGame.start(testPlayers, testWords, allowedWords);
         GameRound testGameRound = null;
         try {
             Field privateField = testGame.getClass().getSuperclass().getDeclaredField("game");
@@ -157,11 +159,12 @@ public class GameServiceTest {
         Game testGame = new WordsPP();
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
         String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
         GameStats testStats = new GameStats();
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
 
-        testGame.start(testPlayers, testWords);
+        testGame.start(testPlayers, testWords, allowedWords);
 
         Mono<GameStats> gameStats = gameService.getConclusion(Mono.just(testPlayer));
 
@@ -199,10 +202,11 @@ public class GameServiceTest {
         Game testGame = new WordsPP();
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
         String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
 
         when(gameRepository.getGameStream(Mockito.anyString())).thenReturn(Flux.just(testGame));
 
-        testGame.start(testPlayers, testWords);
+        testGame.start(testPlayers, testWords, allowedWords);
 
         Flux<GameRound[]> gameRounds = gameService.getOpponentGameRounds(Mono.just(testPlayer));
 

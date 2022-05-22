@@ -53,7 +53,7 @@ public class GameService {
                 .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT2()), (lp, p) -> lp)
                 .switchIfEmpty(player.zipWhen(p -> this.lobbyRepository.getLobby(p.getLobbyId())))
                 .filter(t -> t.getT2().getGame().getGameStatus(t.getT1()) == GameStatus.GUESSING)
-                .map(l -> l.getT2().getGame().start(l.getT2().getPlayers(), this.wordsRepository.getRandomWords(500)))
+                .map(l -> l.getT2().getGame().start(l.getT2().getPlayers(), this.wordsRepository.getRandomWords(500), this.wordsRepository.getAllAllowedWords()))
                 .map(g -> {
                     if (g.getMaxTime() == 0) {
                         return g;

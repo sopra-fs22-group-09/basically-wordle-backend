@@ -28,25 +28,14 @@ public class WordsRepository {
     private final String allWords = "allWords";
     private final Random rnd = new SecureRandom();
 
+    private static final String[] urls = {"https://raw.githubusercontent.com/mongodb-developer/bash-wordle/main/words.json", "https://api.datamuse.com/words"};
+
     public WordsRepository(@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection") RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
-    public String[] getWordsByTopic(String topic, int count) {
-        if (count < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please request a valid number of words.");
-        String sanitizedTopic = topic.replaceAll("[^A-Za-z]", ""); //Sanitize all non-alphabetic characters to prevent API abuse
-        if (sanitizedTopic.equals("")) sanitizedTopic = allWords;
-
-        //Check whether there are enough words in the repository:
-        //If not fetch from api and check again. if there are still not enough words throw error.
-        if (count > redisTemplate.opsForHash().size(sanitizedTopic)) {
-            cacheWordsFromAPI(sanitizedTopic);
-            if (count > redisTemplate.opsForHash().size(sanitizedTopic))
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Too many words for the were requested.");
-        }
-
-        //Convert result to object array, then copy the content to a new string array and return it.
-        return Arrays.copyOf(Objects.requireNonNull(redisTemplate.opsForHash().randomEntries(sanitizedTopic, count)).values().toArray(), count, String[].class);
+    public String[] getRandomWords(int count) {
+        return getWordsByTopic(allWords, count);
     }
 
     public String[] getWordsByTopics(String[] topics, int count) {
@@ -66,41 +55,60 @@ public class WordsRepository {
         return words;
     }
 
-    public String[] getRandomWords(int count) {
-        return getWordsByTopic(allWords, count);
+    public String[] getAllAllowedWords() {
+        return getRandomWords(redisTemplate.opsForHash().size(allWords).intValue());
+    }
+
+    private String[] getWordsByTopic(String topic, int count) {
+        if (count < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please request a valid number of words.");
+        String sanitizedTopic = topic.replaceAll("[^A-Za-z]", ""); //Sanitize all non-alphabetic characters to prevent API abuse
+        if (sanitizedTopic.equals("")) sanitizedTopic = allWords;
+
+        //Check whether there are enough words in the repository:
+        //If not fetch from api and check again. if there are still not enough words throw error.
+        if (count > redisTemplate.opsForHash().size(sanitizedTopic)) {
+            cacheWordsFromAPI(sanitizedTopic);
+            if (count > redisTemplate.opsForHash().size(sanitizedTopic))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Too many words for the were requested.");
+        }
+
+        //Convert result to object array, then copy the content to a new string array and return it.
+        return Arrays.copyOf(Objects.requireNonNull(redisTemplate.opsForHash().randomEntries(sanitizedTopic, count)).values().toArray(), count, String[].class);
     }
 
     private void cacheWordsFromAPI(String topic) {
         BufferedReader input = null;
-        try {
-            URL url = new URL("https://api.datamuse.com/words?sp=?????&max=1000" + (topic.equals(allWords) ? "" : "&topics=" + topic));
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.connect();
-            if(conn.getResponseCode() == 200) {
-                input = new BufferedReader(new InputStreamReader(url.openStream()));
-                HashMap<String, String> tmp = new HashMap<>();
-                String inputLine;
-                while((inputLine = input.readLine()) != null) {
-                    for (Object j : (JSONArray) new JSONParser().parse(inputLine)) {
-                        String word = ((JSONObject) j).get("word").toString().toUpperCase();
-                        // Don't establish a connection to redis every time
-                        // Instead collect all words and put them all together to redis
-                        tmp.put(word, word);
-                    }
-                }
-                redisTemplate.opsForHash().putAll(topic, tmp);
-                redisTemplate.expire(topic, Duration.ofDays(1));
-            } else throw new ProtocolException();
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while fetching data from the external API. Please try again in a few minutes.");
-        } catch (ParseException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while processing the fetched data from the external API. Please try again in a few minutes.");
-        }
-        finally {
+        for (int i = 0; i < urls.length; ++i) {
             try {
-                if (input != null) input.close();
-            } catch (IOException ignore) {}
+                URL url = new URL(urls[i] + "?sp=?????&max=1000" + (topic.equals(allWords) ? "" : "&topics=" + topic));
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.connect();
+                if (conn.getResponseCode() == 200) {
+                    input = new BufferedReader(new InputStreamReader(url.openStream()));
+                    HashMap<String, String> tmp = new HashMap<>();
+                    String inputLine;
+                    while ((inputLine = input.readLine()) != null) {
+                        for (Object j : (JSONArray) new JSONParser().parse(inputLine)) {
+                            String word = ((JSONObject) j).get("word").toString().toUpperCase();
+                            // Don't establish a connection to redis every time
+                            // Instead collect all words and put them all together to redis
+                            if (word.matches("[A-Z]+")) tmp.put(word, word);
+                        }
+                    }
+                    redisTemplate.opsForHash().putAll(topic, tmp);
+                    redisTemplate.expire(topic, Duration.ofDays(1));
+                } else throw new ProtocolException();
+            } catch (IOException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while fetching data from the external API. Please try again in a few minutes.");
+            } catch (ParseException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while processing the fetched data from the external API. Please try again in a few minutes.");
+            } finally {
+                try {
+                    if (input != null) input.close();
+                } catch (IOException ignore) {
+                }
+            }
         }
     }
 }
