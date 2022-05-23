@@ -276,7 +276,6 @@ public class LobbyServiceTest {
         User testReceiver = User.builder()
                 .id(UUID.randomUUID())
                 .build();
-        LobbyInvite testLobbyInvite = LobbyInvite.builder().build();
 
         when(lobbyRepository.inviteToLobby(Mockito.any())).thenReturn(Mono.just(true));
 
