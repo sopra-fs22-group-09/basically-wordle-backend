@@ -50,7 +50,7 @@ public class GameRound implements Serializable {
         this.gameStats.setTargetWord(targetWord);
         long time = (this.finish - this.start) / 1000000000;
         this.gameStats.setTimeTaken(time);
-        int score = (int) (100 - ((int) Math.pow(currentGuess, 1.5) * 4) - (((time % 3600) / 60 ) / 5));
+        int score = (int) (100 - ((int) Math.pow(currentGuess, 1.5) * 5) - (((time % 3600) / 60 ) / 5));
         this.gameStats.setScore(score);
     }
 }
