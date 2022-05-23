@@ -27,22 +27,14 @@ public class GameRepository {
                 .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + g.getId(), g).thenReturn(g))
                 .flatMapIterable(Game::getPlayers)
                 .flatMap(p -> this.broadcastGameStatusSingle(p.getId(), game.getGameStatus(p)).thenReturn(p))
-                .then(Mono.just(game));
-/*                .flatMapIterable(Game::getPlayers)
-                .all(p -> game.getGameStatus(p) == GameStatus.GUESSING)
-                .flatMap(p -> p ? Mono.defer(() -> this.broadcastGameStatus(game, GameStatus.GUESSING)) : Mono.empty())
-                .thenReturn(game)
-                .flatMapIterable(Game::getPlayers)
-                .filter(p -> game.getGameStatus(p) != GameStatus.GUESSING)
-                .flatMap(p -> Mono.defer(() -> this.broadcastGameStatusSingle(p.getId(), game.getGameStatus(p))))
                 .then(Mono.just(game))
-                .log();*/
+                .log();
+
     }
 
     public Mono<Long> deleteGame(String id) {
         return this.reactiveGameRedisTemplate.<String, Game>opsForHash()
                 .remove("games", id);
-                //.publishOn(Schedulers.boundedElastic()) //needed?
     }
 
     public Mono<Game> getGame(String id) {
@@ -56,8 +48,6 @@ public class GameRepository {
         return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/game/" + id, "gameSync/player/" + player.getId())
                 .map(ReactiveSubscription.Message::getMessage)
                 .distinctUntilChanged()
-                // Reset after round concludes!
-                //.distinct()
                 .log();
     }
 

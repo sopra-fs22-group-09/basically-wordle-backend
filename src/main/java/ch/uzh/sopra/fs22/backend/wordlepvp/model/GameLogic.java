@@ -1,10 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
-import graphql.GraphQLException;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
@@ -41,7 +38,9 @@ public abstract class GameLogic implements Game, Serializable {
         Arrays.setAll(targetWords, word -> this.repoWords[r.nextInt(this.repoWords.length)]);
         for (Player player : players) {
             this.game.put(player, new GameRound(player, 0, this.targetWords[0]));
-            this.gameStats.put(player, new GameStats());
+            GameStats gameStats = new GameStats();
+            gameStats.setTargetWord(this.targetWords[0]);
+            this.gameStats.put(player, gameStats);
         }
 
         return this;
@@ -50,7 +49,11 @@ public abstract class GameLogic implements Game, Serializable {
     @Override
     public GameRound guess(Player player, String word) {
         GameRound currentGameRound = this.game.get(player).makeGuess(Arrays.asList(this.allowedWords).contains(word) ? word : "");
-        // FIXME: Handle NPE
+
+        if (this.currentGameStatus.get(player) == null) {
+            System.err.println("The Gamestatus was null for whatever reason. It got reinitialized.");
+            this.currentGameStatus.put(player, GameStatus.GUESSING);
+        }
         if (this.currentGameStatus.get(player).equals(GameStatus.WAITING)
                 || this.currentGameStatus.get(player).equals(GameStatus.FINISHED)) {
             return currentGameRound;
@@ -84,7 +87,6 @@ public abstract class GameLogic implements Game, Serializable {
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
         } else if (nextRound < this.amountRounds) {
             this.game.replaceAll((p, gr) -> new GameRound(p, nextRound, this.targetWords[nextRound]));
-            this.currentGameStatus.replaceAll((p, gs) -> GameStatus.GUESSING);
             currentGameRound = this.game.get(currentGameRound.getPlayer()); //maybe need that the last guesser also gets updated to the new screen
         } else {
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
