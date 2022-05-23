@@ -6,7 +6,6 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.PlayerRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.GameSettingsInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
-import graphql.GraphQLException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -85,11 +84,12 @@ public class LobbyService {
     public Mono<Lobby> addPlayerToLobby(String id, Mono<Player> player) {
 
         return this.lobbyRepository.getLobby(id)
+                .publishOn(Schedulers.boundedElastic())
                 .zipWith(player, (l, p) -> {
                     if (l.getStatus().equals(LobbyStatus.INGAME)) {
                         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join a lobby that is in game!");
                     }
-                    if (l.getStatus().equals(LobbyStatus.FULL)) {
+                    if (l.getStatus().equals(LobbyStatus.FULL) && !l.getPlayers().contains(p)) {
                         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join a full lobby!");
                     }
                     p.setLobbyId(id);
