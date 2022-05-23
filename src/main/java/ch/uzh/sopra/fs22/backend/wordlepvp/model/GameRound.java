@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 @Getter
 @RequiredArgsConstructor
@@ -23,9 +24,8 @@ public class GameRound implements Serializable {
     private long finish;
 
     public GameRound makeGuess(String word) {
-        if (this.guessed) {
-            return this;
-        }
+        if (this.guessed || word.equals("") || Arrays.asList(this.words).contains(word)) return this;
+
         this.words[this.currentGuess] = word;
         for (int i = 0; i < word.length(); i++) {
             if (this.targetWord.charAt(i) == word.charAt(i)) {

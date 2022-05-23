@@ -21,14 +21,16 @@ public abstract class GameLogic implements Game, Serializable {
     private int maxTime = 180;
 
     private String[] repoWords;
+    private String[] allowedWords;
     private String[] targetWords;
     private Map<Player, GameRound> game = new HashMap<>();
     private Map<Player, GameStatus> currentGameStatus = new HashMap<>();
     private Map<Player, GameStats> gameStats = new HashMap<>();
 
     @Override
-    public Game start(Set<Player> players, String[] repoWords) {
+    public Game start(Set<Player> players, String[] repoWords, String[] allowedWords) {
         this.repoWords = repoWords;
+        this.allowedWords = allowedWords;
         if (this.maxRounds == 0) {
             this.targetWords = new String[50];
         } else {
@@ -47,10 +49,7 @@ public abstract class GameLogic implements Game, Serializable {
 
     @Override
     public GameRound guess(Player player, String word) {
-/*        if (!Arrays.asList(this.repoWords).contains(word)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Word is not in todays cached wordlist!");
-        }*/
-        GameRound currentGameRound = this.game.get(player).makeGuess(word);
+        GameRound currentGameRound = this.game.get(player).makeGuess(Arrays.asList(this.allowedWords).contains(word) ? word : "");
         // FIXME: Handle NPE
         if (this.currentGameStatus.get(player).equals(GameStatus.WAITING)
                 || this.currentGameStatus.get(player).equals(GameStatus.FINISHED)) {
