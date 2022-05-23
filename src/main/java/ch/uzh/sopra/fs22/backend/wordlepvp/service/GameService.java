@@ -132,6 +132,9 @@ public class GameService {
                         .flatMap(p -> this.gameRepository.getGame(p.getLobbyId()))
                         .publishOn(Schedulers.boundedElastic())
                         .zipWith(player, (g, p) -> {
+                            if (g.getPlayers().stream().anyMatch(players -> g.getGameStatus(players).equals(GameStatus.FINISHED))) {
+                                return g;
+                            }
                             g.getPlayers().remove(p);
 
                             if (g.getPlayers().isEmpty()) {
