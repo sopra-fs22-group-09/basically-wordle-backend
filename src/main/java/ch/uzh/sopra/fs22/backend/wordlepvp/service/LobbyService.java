@@ -41,7 +41,7 @@ public class LobbyService {
         return this.lobbyRepository.hasLobby(lobbyId)
                 .doOnNext(b -> {
                     if (!b) {
-                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join a non-existing lobby!");
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby does not exist!");
                     }
                 })
                 .then(this.lobbyRepository.getLobby(lobbyId));
