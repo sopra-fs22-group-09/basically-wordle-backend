@@ -38,7 +38,13 @@ public class LobbyService {
     }
 
     public Mono<Lobby> getLobbyById(String lobbyId) {
-        return this.lobbyRepository.getLobby(lobbyId);
+        return this.lobbyRepository.hasLobby(lobbyId)
+                .doOnNext(b -> {
+                    if (!b) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join a non-existing lobby!");
+                    }
+                })
+                .then(this.lobbyRepository.getLobby(lobbyId));
     }
 
     public Mono<Lobby> initializeLobby(LobbyInput input, Mono<Player> player) {

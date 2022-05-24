@@ -44,6 +44,12 @@ public class LobbyRepository {
                 .log();
     }
 
+    public Mono<Boolean> hasLobby(String id) {
+        return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash()
+                .hasKey("lobbies", id)
+                .log();
+    }
+
     public Mono<Lobby> getLobby(String id) {
         return this.reactiveLobbyRedisTemplate.<String, Lobby>opsForHash()
                 .get("lobbies", id)

@@ -22,6 +22,7 @@ public class GraphQLErrorResolver extends DataFetcherExceptionResolverAdapter {
             switch (((ResponseStatusException) ex).getStatus()) {
                 case BAD_REQUEST -> errType = ErrorType.BAD_REQUEST;
                 case UNAUTHORIZED -> errType = ErrorType.UNAUTHORIZED;
+                case FORBIDDEN -> errType = ErrorType.FORBIDDEN;
                 case NOT_FOUND -> errType = ErrorType.NOT_FOUND;
                 default -> {
                 }
