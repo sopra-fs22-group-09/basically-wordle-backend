@@ -57,14 +57,15 @@ spring:
     generate-ddl: true  # Overwritten by hibernate.ddl-auto
     hibernate:
       ddl-auto: create
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
 
   graphql:
     cors:
       allowed-origins: https://wordlepvp-frontend.oxv.io,https://www.oxv.io,https://oxv.io
       allowed-origin-patterns: https://wordlepvp-frontend*.oxv.io
-  sql:
-    init:
-      mode: always
 ---
 spring:
   config:
