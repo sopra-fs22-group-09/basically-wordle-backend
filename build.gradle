@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'ch.uzh.sopra.fs22.backend'
-version = '0.0.1-M3'
+version = '0.0.1-M4'
 //sourceCompatibility = '17'
 
 java {
