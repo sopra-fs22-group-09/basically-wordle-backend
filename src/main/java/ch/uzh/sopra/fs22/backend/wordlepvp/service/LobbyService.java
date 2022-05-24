@@ -38,7 +38,13 @@ public class LobbyService {
     }
 
     public Mono<Lobby> getLobbyById(String lobbyId) {
-        return this.lobbyRepository.getLobby(lobbyId);
+        return this.lobbyRepository.hasLobby(lobbyId)
+                .doOnNext(b -> {
+                    if (!b) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lobby does not exist!");
+                    }
+                })
+                .then(this.lobbyRepository.getLobby(lobbyId));
     }
 
     public Mono<Lobby> initializeLobby(LobbyInput input, Mono<Player> player) {
@@ -70,6 +76,7 @@ public class LobbyService {
 
         return player.map(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
+                .publishOn(Schedulers.boundedElastic())
                 .map(l -> {
                     l.setStatus(l.getPlayers().size() >= l.getSize() ? LobbyStatus.FULL : LobbyStatus.OPEN);
                     l.setGame(this.createGame(l.getId(), l.getGameMode()));
@@ -93,7 +100,7 @@ public class LobbyService {
                         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join a full lobby!");
                     }
                     p.setLobbyId(id);
-                    this.playerRepository.savePlayer(p).subscribe(); //Chamer de subscribe echt irgendwie ersetze?
+                    this.playerRepository.savePlayer(p).subscribe();
                     l.getPlayers().add(p);
 
                     Map<String, Disposable> lobbyDisposable = this.lobbyDeletion;
@@ -150,10 +157,8 @@ public class LobbyService {
 
     }
 
-    // TODO: Check whether lobby full and reject
     public Flux<Lobby> subscribeLobby(String id, Mono<Player> player) {
         return this.lobbyRepository.getLobbyStream(id)
-                //.filter(l -> l.getStatus() == LobbyStatus.OPEN) //@elvio das gaht nid, all andere subs werded au gfiltered
                 .publishOn(Schedulers.boundedElastic())
                 .doFinally(ignored -> this.lobbyRepository.getLobby(id)
                         .publishOn(Schedulers.boundedElastic())
@@ -192,18 +197,6 @@ public class LobbyService {
         return this.lobbyRepository.getAllLobbiesStream();
     }
 
-    //TODO MAYBE WE CAN NOW PUT THAT INTO THE GAMESERVICE SINCE LOBBYSERVICE IS NEW
-    public Game createGame(String lobbyId, GameMode gameMode) {
-        try {
-            Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + gameMode.getClassName()).asSubclass(Game.class);
-            Game game = gameClass.getDeclaredConstructor().newInstance();
-            game.setId(lobbyId);
-            return game;
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
-        }
-    }
-
     public Flux<LobbyInvite> receiveLobbyInvites(User user) {
         return this.lobbyRepository.getInvitesStream(user);
     }
@@ -217,5 +210,16 @@ public class LobbyService {
                 .timeout(3600L) // 1h
                 .build();
         return this.lobbyRepository.inviteToLobby(invite);
+    }
+
+    public Game createGame(String lobbyId, GameMode gameMode) {
+        try {
+            Class<? extends Game> gameClass = Class.forName("ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes." + gameMode.getClassName()).asSubclass(Game.class);
+            Game game = gameClass.getDeclaredConstructor().newInstance();
+            game.setId(lobbyId);
+            return game;
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find Game.");
+        }
     }
 }

@@ -5,7 +5,6 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.util.GameTimerTask;
-import graphql.GraphQLException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,9 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -50,8 +48,9 @@ public class GameService {
                         && t.getT2().getGame().getGameStatus(t.getT1()) != GameStatus.GUESSING)
                 .doOnNext(t -> t.getT2().getGame().setGameStatus(t.getT1(), GameStatus.GUESSING))
                 .zipWhen(t -> this.gameRepository.saveGame(t.getT2().getGame()), (lp, p) -> lp)
-                .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT2()), (lp, p) -> lp)
                 .switchIfEmpty(player.zipWhen(p -> this.lobbyRepository.getLobby(p.getLobbyId())))
+                .doOnNext(t -> t.getT2().setStatus(LobbyStatus.INGAME))
+                .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT2()), (lp, p) -> lp)
                 .filter(t -> t.getT2().getGame().getGameStatus(t.getT1()) == GameStatus.GUESSING)
                 .map(l -> l.getT2().getGame().start(l.getT2().getPlayers(), this.wordsRepository.getRandomWords(500), this.wordsRepository.getAllAllowedWords()))
                 .map(g -> {
@@ -59,7 +58,7 @@ public class GameService {
                         return g;
                     }
                     Timer gameTimer = new Timer();
-                    gameTimer.schedule(new GameTimerTask(g.getId(), this.gameRepository), g.getRoundTime() * 1000L);
+                    gameTimer.schedule(new GameTimerTask(g.getId(), this.gameRepository, this), g.getRoundTime() * 1000L);
                     this.gameTimers.put(g.getId(), gameTimer);
                     return g;
                 })
@@ -72,20 +71,15 @@ public class GameService {
 
         return player.map(Player::getLobbyId)
                 .flatMap(this.gameRepository::getGame)
+                .publishOn(Schedulers.boundedElastic())
                 .zipWith(player, (g, p) -> {
                     GameRound gr = g.guess(p, word);
                     if (g.getPlayers().stream().allMatch(players -> g.getGameStatus(players).equals(GameStatus.WAITING))) {
                         g.endRound();
-                        if (g.getMaxTime() != 0) {
-                            if (this.gameTimers.get(g.getId()) != null) {
-                                this.gameTimers.get(g.getId()).cancel();
-                                this.gameTimers.get(g.getId()).purge();
-                                if (g.getPlayers().stream().noneMatch(players -> g.getGameStatus(players).equals(GameStatus.FINISHED))) {
-                                    Timer gameTimer = new Timer();
-                                    gameTimer.schedule(new GameTimerTask(g.getId(), this.gameRepository), g.getRoundTime() * 1000L);
-                                    this.gameTimers.put(g.getId(), gameTimer);
-                                }
-                            }
+                        if (g.getMaxTime() != 0 && this.gameTimers.get(g.getId()) != null) {
+                            this.gameTimers.get(g.getId()).cancel();
+                            this.gameTimers.get(g.getId()).purge();
+                            restartTimer(g);
                         }
                     }
                     return this.gameRepository.saveGame(g).thenReturn(gr);
@@ -100,6 +94,21 @@ public class GameService {
         return player.map(Player::getLobbyId)
                 .flatMap(this.gameRepository::getGame)
                 .zipWith(player, Game::concludeGame)
+                .publishOn(Schedulers.boundedElastic())
+                .zipWith(player, (gC, p) -> {
+                    this.gameRepository.getGame(p.getLobbyId())
+                            .publishOn(Schedulers.boundedElastic())
+                            .map(g -> {
+                                if (g.getPlayers().stream().allMatch(players -> g.getGameStatus(players).equals(GameStatus.WAITING))) {
+                                    g.getPlayers().forEach(players -> g.setGameStatus(players, GameStatus.GUESSING));
+                                    this.gameRepository.saveGame(g).subscribe();
+                                    this.gameRepository.broadcastGameStatus(g, GameStatus.GUESSING).subscribe();
+                                }
+                                return g;
+                            })
+                            .subscribe();
+                    return gC;
+                })
                 .log();
 
     }
@@ -123,6 +132,9 @@ public class GameService {
                         .flatMap(p -> this.gameRepository.getGame(p.getLobbyId()))
                         .publishOn(Schedulers.boundedElastic())
                         .zipWith(player, (g, p) -> {
+                            if (g.getPlayers().stream().anyMatch(players -> g.getGameStatus(players).equals(GameStatus.FINISHED))) {
+                                return g;
+                            }
                             g.getPlayers().remove(p);
 
                             if (g.getPlayers().isEmpty()) {
@@ -131,7 +143,9 @@ public class GameService {
                                 }
                             }
                             if (g.getPlayers().stream().allMatch(players -> g.getGameStatus(players).equals(GameStatus.WAITING))) {
+                                g.endRound();
                                 g.getPlayers().forEach(players -> g.setGameStatus(players, GameStatus.GUESSING));
+                                this.gameRepository.broadcastGameStatus(g, GameStatus.GUESSING).subscribe();
                             }
                             this.gameRepository.saveGame(g).subscribe();
                             return g;
@@ -165,10 +179,6 @@ public class GameService {
                     }
                     return Mono.defer(Mono::empty);
                 })
-//                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-//                        "There is currently no sync in progress for this lobby.")))
-//                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-//                        "You are not currently in a lobby.")))
                 .flatMap(lp -> this.lobbyRepository.saveLobby(lp.getT1()))
                 .flatMap(l -> l.getPlayers().stream().anyMatch(p -> l.getGame().getGameStatus(p) == GameStatus.SYNCING) ?
                         this.gameRepository.saveGame(l.getGame())
@@ -180,5 +190,13 @@ public class GameService {
                         "Something went terribly wrong."))
                 .log()
                 .then(Mono.just(true));
+    }
+
+    public void restartTimer(Game g) {
+        if (g.getPlayers().stream().noneMatch(players -> g.getGameStatus(players).equals(GameStatus.FINISHED))) {
+            Timer gameTimer = new Timer();
+            gameTimer.schedule(new GameTimerTask(g.getId(), this.gameRepository, this), g.getRoundTime() * 1000L);
+            this.gameTimers.put(g.getId(), gameTimer);
+        }
     }
 }
