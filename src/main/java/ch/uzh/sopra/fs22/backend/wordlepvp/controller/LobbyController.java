@@ -55,9 +55,8 @@ public class LobbyController {
     @MutationMapping
     public Mono<Lobby> joinLobbyById(@Argument @Valid String id, @ContextValue(name = "Authorization") String authHeader) {
         User user = this.userService.getFromToken(AuthorizationHelper.extractAuthToken(authHeader));
-        // TODO: In lobby?
-        var player = this.playerService.createPlayer(user);
-        var lobby = this.lobbyService.getLobbyById(id);
+        Mono<Player> player = this.playerService.createPlayer(user);
+        Mono<Lobby> lobby = this.lobbyService.getLobbyById(id);
 
         return player.zipWith(lobby)
                 .filter(pl -> !pl.getT2().getOwner().getId().equals(pl.getT1().getId()))
