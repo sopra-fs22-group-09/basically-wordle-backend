@@ -1,5 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.controller;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.GameRound;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.GameService;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.PlayerService;

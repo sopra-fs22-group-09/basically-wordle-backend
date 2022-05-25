@@ -1,6 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameLogic;
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.GameLogic;
 
 public class WordsPP extends GameLogic {
 

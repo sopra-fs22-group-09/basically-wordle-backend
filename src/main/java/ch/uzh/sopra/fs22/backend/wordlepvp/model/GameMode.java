@@ -12,7 +12,8 @@ public enum GameMode {
     INTIME("InTime", "SOLO"),
     PLAYERVSAI("PlayerVsAI", "SOLO"),
     ONEWORD("OneWord", "COOP"),
-    WORDCOMBINATION("WordCombination", "COOP");
+    WORDCOMBINATION("WordCombination", "COOP"),
+    TEST("test", "test");
 
     private final String className;
     private final String category;

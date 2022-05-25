@@ -1,6 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.RedisConfig;
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes.SonicFast;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes.WordsPP;
@@ -20,8 +21,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -154,5 +153,33 @@ public class GameRepositoryTest {
                 .thenAwait()
                 .thenCancel()
                 .verify();
+    }
+
+    @Test
+    public void broadcastGameStatusSingleTest() {
+
+        Player testPlayer = Player.builder()
+                .id("testId").build();
+
+        Mono<Long> broadCasted = this.gameRepository.broadcastGameStatusSingle(testPlayer.getId(), GameStatus.NEW);
+
+        StepVerifier.create(broadCasted)
+                .expectNext(0L)
+                .verifyComplete();
+
+    }
+
+    @Test
+    public void broadcastGameStatusTest() {
+
+        Game testGame = new SonicFast();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+
+        Mono<Long> broadCasted = this.gameRepository.broadcastGameStatus(testGame, GameStatus.NEW);
+
+        StepVerifier.create(broadCasted)
+                .expectNext(0L)
+                .verifyComplete();
+
     }
 }

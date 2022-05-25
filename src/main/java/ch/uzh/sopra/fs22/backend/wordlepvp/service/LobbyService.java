@@ -1,5 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
