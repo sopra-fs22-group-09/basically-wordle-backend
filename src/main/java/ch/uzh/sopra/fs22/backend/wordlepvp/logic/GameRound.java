@@ -1,5 +1,8 @@
-package ch.uzh.sopra.fs22.backend.wordlepvp.model;
+package ch.uzh.sopra.fs22.backend.wordlepvp.logic;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStats;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.LetterState;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -39,10 +42,10 @@ public class GameRound implements Serializable {
             }
         }
         if (this.targetWord.equals(word) || this.currentGuess >= 5) {
-            this.endCurrentRound();
             if (this.targetWord.equals(word)) {
                 this.guessed = true;
             }
+            this.endCurrentRound();
         } else {
             this.currentGuess += 1;
         }

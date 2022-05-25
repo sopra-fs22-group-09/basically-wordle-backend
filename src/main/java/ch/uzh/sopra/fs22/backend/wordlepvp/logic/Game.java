@@ -1,4 +1,8 @@
-package ch.uzh.sopra.fs22.backend.wordlepvp.model;
+package ch.uzh.sopra.fs22.backend.wordlepvp.logic;
+
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStats;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStatus;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 
 import java.util.Set;
 

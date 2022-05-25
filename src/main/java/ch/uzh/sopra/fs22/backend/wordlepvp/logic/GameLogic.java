@@ -1,5 +1,6 @@
-package ch.uzh.sopra.fs22.backend.wordlepvp.model;
+package ch.uzh.sopra.fs22.backend.wordlepvp.logic;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

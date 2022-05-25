@@ -1,6 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStatus;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import org.springframework.data.redis.connection.ReactiveSubscription;
