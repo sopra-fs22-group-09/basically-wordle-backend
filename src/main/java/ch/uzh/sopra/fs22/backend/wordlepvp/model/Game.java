@@ -1,7 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.model;
 
 import java.util.Set;
-import java.util.Timer;
 
 public interface Game {
 
@@ -16,7 +15,7 @@ public interface Game {
 
     Game start(Set<Player> players, String[] repoWords, String[] allowedWords);
     GameRound guess(Player player, String word);
-    GameRound endRound();
+    void endRound();
     GameStats concludeGame(Player player);
 
     GameStatus getGameStatus(Player player);

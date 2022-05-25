@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -17,5 +18,5 @@ public class GameStats implements Serializable {
 
     private int score;
 
-    private int rank;
+    private List<Player> ranking;
 }

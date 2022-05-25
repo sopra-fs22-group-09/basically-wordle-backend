@@ -23,6 +23,7 @@ public abstract class GameLogic implements Game, Serializable {
     private Map<Player, GameRound> game = new HashMap<>();
     private Map<Player, GameStatus> currentGameStatus = new HashMap<>();
     private Map<Player, GameStats> gameStats = new HashMap<>();
+    private List<Player> ranking = new ArrayList<>();
 
     @Override
     public Game start(Set<Player> players, String[] repoWords, String[] allowedWords) {
@@ -38,11 +39,10 @@ public abstract class GameLogic implements Game, Serializable {
         Arrays.setAll(targetWords, word -> this.repoWords[r.nextInt(this.repoWords.length)]);
         for (Player player : players) {
             this.game.put(player, new GameRound(player, 0, this.targetWords[0]));
-            GameStats gameStats = new GameStats();
-            gameStats.setTargetWord(this.targetWords[0]);
-            this.gameStats.put(player, gameStats);
+            List<Player> ranking = Objects.requireNonNullElseGet(this.ranking, ArrayList::new);
+            ranking.add(player);
+            updateTargetWord(player);
         }
-
         return this;
     }
 
@@ -58,11 +58,10 @@ public abstract class GameLogic implements Game, Serializable {
                 || this.currentGameStatus.get(player).equals(GameStatus.FINISHED)) {
             return currentGameRound;
         }
-        if (currentGameRound.isGuessed()) {
+        if (currentGameRound.isFinished()) {
             this.saveStats(player);
             this.currentGameStatus.put(player, GameStatus.WAITING);
-            if (this.maxRounds == 0) {
-                //Words++
+            if (this.maxRounds == 0) { //Words++
                 int nextRound = currentGameRound.getCurrentRound() + 1;
                 this.game.put(player, new GameRound(player, nextRound, this.targetWords[nextRound]));
                 this.currentGameStatus.put(player, GameStatus.GUESSING);
@@ -72,7 +71,7 @@ public abstract class GameLogic implements Game, Serializable {
     }
 
     @Override
-    public GameRound endRound() {
+    public void endRound() {
         currentGameStatus.replaceAll((p, gs) -> GameStatus.WAITING);
 
         GameRound currentGameRound;
@@ -80,18 +79,17 @@ public abstract class GameLogic implements Game, Serializable {
         if (currentGameRoundOptional.isPresent()) {
             currentGameRound = currentGameRoundOptional.get();
         } else {
-            return null;
+            return;
         }
         int nextRound = currentGameRound.getCurrentRound() + 1;
         if (this.maxTime == 0) { //Classic
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
         } else if (nextRound < this.amountRounds) {
             this.game.replaceAll((p, gr) -> new GameRound(p, nextRound, this.targetWords[nextRound]));
-            currentGameRound = this.game.get(currentGameRound.getPlayer()); //maybe need that the last guesser also gets updated to the new screen
         } else {
+            this.gameStats.forEach((p, gs) -> updateTargetWord(p));
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
         }
-        return currentGameRound;
     }
 
     @Override
@@ -132,6 +130,20 @@ public abstract class GameLogic implements Game, Serializable {
         gameStats.setRoundsTaken(this.game.get(player).getCurrentRound() + 1);
         gameStats.setScore(gameStats.getScore() + roundStats.getScore());
 
+        this.ranking.sort(Comparator.comparing(p -> gameStats.getScore()));
+        gameStats.setRanking(this.ranking);
+
+        this.gameStats.put(player, gameStats);
+    }
+
+    private void updateTargetWord(Player player) {
+        GameStats gameStats;
+        if (this.gameStats.get(player) == null) {
+            gameStats = new GameStats();
+        } else {
+            gameStats = this.gameStats.get(player);
+        }
+        gameStats.setTargetWord(this.game.get(player).getTargetWord());
         this.gameStats.put(player, gameStats);
     }
 }

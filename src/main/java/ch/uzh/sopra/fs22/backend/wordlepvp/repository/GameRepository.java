@@ -44,7 +44,6 @@ public class GameRepository {
     }
 
     public Flux<GameStatus> getGameStatusStream(String id, Player player) {
-        // FIXME: Use Game ID in the future
         return this.reactiveGameStatusRedisTemplate.listenToChannel("gameSync/game/" + id, "gameSync/player/" + player.getId())
                 .map(ReactiveSubscription.Message::getMessage)
                 .distinctUntilChanged()
