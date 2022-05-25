@@ -365,6 +365,7 @@ public class LobbyServiceTest {
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.PVP)
                 .gameMode(GameMode.SONICFAST)
+                .categories(new ArrayList<>())
                 .game(testGame)
                 .players(new HashSet<>())
                 .build();
@@ -398,6 +399,7 @@ public class LobbyServiceTest {
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.PVP)
                 .gameMode(GameMode.SONICFAST)
+                .categories(new ArrayList<>())
                 .game(testGame)
                 .players(new HashSet<>())
                 .build();
