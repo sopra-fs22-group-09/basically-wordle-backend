@@ -11,6 +11,8 @@ import org.springframework.data.redis.core.TimeToLive;
 import org.springframework.data.redis.core.RedisHash;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -37,6 +39,8 @@ public class Lobby implements Serializable {
     private GameCategory gameCategory;
 
     private GameMode gameMode;
+
+    private List<String> categories;
 
     private Game game;
 
