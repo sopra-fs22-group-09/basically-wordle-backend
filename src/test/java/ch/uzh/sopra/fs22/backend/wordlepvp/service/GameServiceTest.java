@@ -481,13 +481,16 @@ public class GameServiceTest {
                 .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
                 .build();
         Set<Player> testPlayers = new HashSet<>();
+        List<Player> testRanking = new ArrayList<>();
         testPlayers.add(testPlayer);
+        testRanking.add(testPlayer);
         Game testGame = new WordsPP();
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
         String[] testWords = {"Apple"};
         String[] allowedWords = {"Mules", "Monks", "Apple"};
         GameStats testStats = new GameStats();
         testStats.setTargetWord("Apple");
+        testStats.setRanking(testRanking);
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
