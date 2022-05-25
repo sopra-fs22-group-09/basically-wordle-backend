@@ -373,6 +373,7 @@ public class LobbyServiceTest {
         testGameSettingsInput.setGameMode(GameMode.SONICFAST);
         testGameSettingsInput.setAmountRounds(3);
         testGameSettingsInput.setRoundTime(180);
+        testGameSettingsInput.setCategories(new String[0]);
 
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
@@ -407,6 +408,7 @@ public class LobbyServiceTest {
         testGameSettingsInput.setGameMode(GameMode.SONICFAST);
         testGameSettingsInput.setAmountRounds(15);
         testGameSettingsInput.setRoundTime(600);
+        testGameSettingsInput.setCategories(new String[0]);
 
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));

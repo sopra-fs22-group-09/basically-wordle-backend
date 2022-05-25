@@ -57,6 +57,7 @@ public class GameServiceTest {
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.SOLO)
                 .gameMode(GameCategory.SOLO.getDefaultGameMode())
+                .categories(new ArrayList<>())
                 .players(new HashSet<>())
                 .build();
         Game testGame = new Classic();
@@ -67,7 +68,7 @@ public class GameServiceTest {
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
-        when(wordsRepository.getRandomWords(Mockito.anyInt())).thenReturn(testWords);
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
 
         Mono<Game> game = gameService.initializeGame(Mono.just(testPlayer));
 
@@ -594,6 +595,7 @@ public class GameServiceTest {
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.SOLO)
                 .gameMode(GameCategory.SOLO.getDefaultGameMode())
+                .categories(new ArrayList<>())
                 .players(new HashSet<>())
                 .build();
         Game testGame = new Classic();
@@ -604,7 +606,7 @@ public class GameServiceTest {
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
-        when(wordsRepository.getRandomWords(Mockito.anyInt())).thenReturn(testWords);
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
 
         Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer));
 
