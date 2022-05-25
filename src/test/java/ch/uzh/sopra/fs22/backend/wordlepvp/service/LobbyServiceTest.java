@@ -6,6 +6,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes.SonicFast;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.PlayerRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.util.GameTimerTask;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.GameSettingsInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LobbyInput;
 import org.junit.jupiter.api.Test;
@@ -15,10 +16,13 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.lang.reflect.Field;
+import java.time.Duration;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -178,6 +182,7 @@ public class LobbyServiceTest {
                 .verifyComplete();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void addPlayerToLobbyTest() {
 
@@ -197,6 +202,19 @@ public class LobbyServiceTest {
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(playerRepository.savePlayer(Mockito.any())).thenReturn(Mono.just(testPlayer));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.deleteLobby(Mockito.anyString())).thenReturn(Mono.just(1L));
+
+        try {
+            Field privateFieldTimers = lobbyService.getClass().getDeclaredField("lobbyDeletion");
+            privateFieldTimers.setAccessible(true);
+            Map<String, Disposable> lobbyDeletion = (HashMap<String, Disposable>) privateFieldTimers.get(lobbyService);
+            lobbyDeletion.put(testLobby.getId(),
+                    this.lobbyRepository.deleteLobby(testLobby.getId())
+                            .delaySubscription(Duration.ofSeconds(10L))
+                            .subscribe());
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
 
         Mono<Lobby> lobby = this.lobbyService.addPlayerToLobby("deadbeef-dead-beef-caff-deadbeefcaff", Mono.just(testPlayer));
 
@@ -365,6 +383,7 @@ public class LobbyServiceTest {
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.PVP)
                 .gameMode(GameMode.SONICFAST)
+                .categories(new ArrayList<>())
                 .game(testGame)
                 .players(new HashSet<>())
                 .build();
@@ -372,6 +391,7 @@ public class LobbyServiceTest {
         testGameSettingsInput.setGameMode(GameMode.SONICFAST);
         testGameSettingsInput.setAmountRounds(3);
         testGameSettingsInput.setRoundTime(180);
+        testGameSettingsInput.setCategories(new String[0]);
 
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
@@ -398,6 +418,7 @@ public class LobbyServiceTest {
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.PVP)
                 .gameMode(GameMode.SONICFAST)
+                .categories(new ArrayList<>())
                 .game(testGame)
                 .players(new HashSet<>())
                 .build();
@@ -405,6 +426,7 @@ public class LobbyServiceTest {
         testGameSettingsInput.setGameMode(GameMode.SONICFAST);
         testGameSettingsInput.setAmountRounds(15);
         testGameSettingsInput.setRoundTime(600);
+        testGameSettingsInput.setCategories(new String[0]);
 
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
@@ -436,6 +458,7 @@ public class LobbyServiceTest {
         when(lobbyRepository.getLobbyStream(Mockito.anyString())).thenReturn(Flux.just(testLobby));
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.deleteLobby(Mockito.anyString())).thenReturn(Mono.just(1L));
 
         Flux<Lobby> lobby = this.lobbyService.subscribeLobby(testLobby.getId(), Mono.just(testPlayer));
 
@@ -471,6 +494,7 @@ public class LobbyServiceTest {
         when(lobbyRepository.getLobbyStream(Mockito.anyString())).thenReturn(Flux.just(testLobby));
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.deleteLobby(Mockito.anyString())).thenReturn(Mono.just(1L));
 
         Flux<Lobby> lobby = this.lobbyService.subscribeLobby(testLobby.getId(), Mono.just(testOwner));
 

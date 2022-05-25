@@ -14,4 +14,6 @@ public class GameSettingsInput {
     private Integer amountRounds;
 
     private Integer roundTime;
+
+    private String[] categories;
 }

@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class WordlePvpBackendApplication {
 
 	public static void main(String[] args) {
-		// TODO: Initialize lobbies?
 		SpringApplication.run(WordlePvpBackendApplication.class, args);
 	}
 

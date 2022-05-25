@@ -85,7 +85,7 @@ input GameSettingsInput {
     gameMode: GameMode!
     amountRounds: Int
     roundTime: Int
-    # wordCategories: Categories ??? how
+    categories: [String]
 }
 
 #input MessageInput {
@@ -124,6 +124,7 @@ type Lobby {
     status: LobbyStatus!
     gameCategory: GameCategory!
     gameMode: GameMode!
+    categories: [String]
     game: Game!
     players: [Player]
 }
