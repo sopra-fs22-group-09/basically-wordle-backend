@@ -9,6 +9,7 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes.WordsPP;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.util.GameTimerTask;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -92,6 +93,7 @@ public class GameServiceTest {
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.PVP)
                 .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
                 .players(new HashSet<>())
                 .build();
         Game testGame = new WordsPP();
@@ -102,7 +104,7 @@ public class GameServiceTest {
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
-        when(wordsRepository.getRandomWords(Mockito.anyInt())).thenReturn(testWords);
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
 
         Mono<Game> game = gameService.initializeGame(Mono.just(testPlayer));
 
@@ -130,23 +132,27 @@ public class GameServiceTest {
                 .status(LobbyStatus.FULL)
                 .gameCategory(GameCategory.PVP)
                 .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
                 .players(new HashSet<>())
                 .build();
         Game testGame = new WordsPP();
         testGame.setId(testLobby.getId());
         testLobby.getPlayers().add(testPlayer);
         testLobby.getPlayers().add(testPlayer2);
+        testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
+        testGame.setGameStatus(testPlayer2, GameStatus.GUESSING);
         testLobby.setGame(testGame);
         String[] testWords = {"Mules", "Monks", "Apple"};
 
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
-        when(wordsRepository.getRandomWords(Mockito.anyInt())).thenReturn(testWords);
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
 
         Mono<Game> game = gameService.initializeGame(Mono.just(testPlayer));
 
         StepVerifier.create(game)
+                .expectNext(testGame)
                 .verifyComplete();
     }
 
@@ -200,7 +206,7 @@ public class GameServiceTest {
         testPlayers.add(testPlayer);
         Game testGame = new WordsPP();
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
-        testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
+        testGame.setGameStatus(testPlayer, GameStatus.WAITING);
         String[] testWords = {"Mules"};
         String[] allowedWords = {"Mules"};
 
@@ -214,6 +220,13 @@ public class GameServiceTest {
             privateField.setAccessible(true);
             Map<Player, GameRound> game = (HashMap<Player, GameRound>) privateField.get(testGame);
             testGameRound = game.get(testPlayer);
+
+            Field privateFieldTimers = gameService.getClass().getDeclaredField("gameTimers");
+            privateFieldTimers.setAccessible(true);
+            Timer gameTimer = new Timer();
+            gameTimer.schedule(new GameTimerTask(testGame.getId(), this.gameRepository, gameService), testGame.getRoundTime() * 1000L);
+            Map<String, Timer> gameTimers = (HashMap<String, Timer>) privateFieldTimers.get(gameService);
+            gameTimers.put(testGame.getId(), gameTimer);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -525,6 +538,7 @@ public class GameServiceTest {
                 .verify();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void getOpponentGameRoundsTestOnFinally() {
 
@@ -543,6 +557,17 @@ public class GameServiceTest {
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
         when(gameRepository.broadcastGameStatus(Mockito.any(), Mockito.any())).thenReturn(Mono.just(0L));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+
+        try {
+            Field privateFieldTimers = gameService.getClass().getDeclaredField("gameTimers");
+            privateFieldTimers.setAccessible(true);
+            Timer gameTimer = new Timer();
+            gameTimer.schedule(new GameTimerTask(testGame.getId(), this.gameRepository, gameService), testGame.getRoundTime() * 1000L);
+            Map<String, Timer> gameTimers = (HashMap<String, Timer>) privateFieldTimers.get(gameService);
+            gameTimers.put(testGame.getId(), gameTimer);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
 
         testGame.start(testPlayers, testWords, allowedWords);
 
@@ -587,19 +612,25 @@ public class GameServiceTest {
                 .id("testPlayer")
                 .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
                 .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
         Lobby testLobby = Lobby.builder()
                 .id("deadbeef-dead-beef-caff-deadbeefcaff")
                 .name("deadbeef")
                 .size(2)
                 .owner(testPlayer)
                 .status(LobbyStatus.OPEN)
-                .gameCategory(GameCategory.SOLO)
-                .gameMode(GameCategory.SOLO.getDefaultGameMode())
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
                 .categories(new ArrayList<>())
                 .players(new HashSet<>())
                 .build();
-        Game testGame = new Classic();
+        Game testGame = new WordsPP();
         testGame.setId(testLobby.getId());
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
         testLobby.setGame(testGame);
         String[] testWords = {"Mules", "Monks", "Apple"};
 
@@ -609,6 +640,133 @@ public class GameServiceTest {
         when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
 
         Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer));
+
+        StepVerifier.create(game)
+                .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    public void markStandByTestSyncing() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(testPlayer)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testGame.setGameStatus(testPlayer, GameStatus.SYNCING);
+        testGame.setGameStatus(testPlayer2, GameStatus.SYNCING);
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
+        testLobby.setGame(testGame);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer));
+
+        StepVerifier.create(game)
+                .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    public void markStandByTestNotOwnerNotSyncing() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(testPlayer)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
+        testLobby.setGame(testGame);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer2));
+
+        StepVerifier.create(game)
+                .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    public void markStandByTestGuessing() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(testPlayer)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
+        testLobby.setGame(testGame);
+        testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
+        testGame.setGameStatus(testPlayer2, GameStatus.SYNCING);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer2));
 
         StepVerifier.create(game)
                 .expectNext(true)
