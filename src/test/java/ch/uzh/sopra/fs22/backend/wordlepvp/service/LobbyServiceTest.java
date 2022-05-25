@@ -51,6 +51,7 @@ public class LobbyServiceTest {
                 .build();
 
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.hasLobby(Mockito.anyString())).thenReturn(Mono.just(true));
 
         Mono<Lobby> lobby = this.lobbyService.getLobbyById("deadbeef-dead-beef-caff-deadbeefcaff");
 
