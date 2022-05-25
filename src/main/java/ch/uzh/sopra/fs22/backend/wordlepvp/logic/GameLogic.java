@@ -44,6 +44,10 @@ public abstract class GameLogic implements Game, Serializable {
             ranking.add(player);
             updateTargetWord(player);
         }
+        this.gameStats.forEach((p, gs) -> {
+            gs.setRanking(this.ranking);
+            this.gameStats.put(p, gs);
+        });
         return this;
     }
 
@@ -130,17 +134,19 @@ public abstract class GameLogic implements Game, Serializable {
         gameStats.setTimeTaken(gameStats.getTimeTaken() + roundStats.getTimeTaken());
         gameStats.setRoundsTaken(this.game.get(player).getCurrentRound() + 1);
         gameStats.setScore(gameStats.getScore() + roundStats.getScore());
-
         this.ranking.sort(Comparator.comparing(p -> gameStats.getScore()));
-        gameStats.setRanking(this.ranking);
 
-        this.gameStats.put(player, gameStats);
+        this.gameStats.forEach((p, gs) -> {
+            gs.setRanking(this.ranking);
+            this.gameStats.put(p, gs);
+        });
     }
 
     private void updateTargetWord(Player player) {
         GameStats gameStats;
         if (this.gameStats.get(player) == null) {
             gameStats = new GameStats();
+            gameStats.setScore(0);
         } else {
             gameStats = this.gameStats.get(player);
         }
