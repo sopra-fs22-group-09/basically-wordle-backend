@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 @DataRedisTest
@@ -171,6 +172,7 @@ public class GameServiceTest {
         testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
         String[] testWords = {"Mules", "Monks", "Apple"};
         String[] allowedWords = {"Mules", "Monks", "Apple"};
+        LetterState[][] letterStates = new LetterState[6][5];
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
@@ -186,6 +188,10 @@ public class GameServiceTest {
             e.printStackTrace();
         }
         assert testGameRound != null;
+
+        assertEquals(testPlayer, testGameRound.getPlayer());
+        assertEquals(0L, testGameRound.getFinish());
+        assertEquals(letterStates.length, testGameRound.getLetterStates().length);
 
         Mono<GameRound> gameRound = gameService.submitWord("Mules", Mono.just(testPlayer));
 
