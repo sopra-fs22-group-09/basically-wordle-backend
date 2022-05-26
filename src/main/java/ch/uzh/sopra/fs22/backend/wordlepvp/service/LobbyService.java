@@ -179,7 +179,6 @@ public class LobbyService {
 
                             this.lobbyRepository.saveLobby(l).subscribe();
                             if (l.getPlayers().isEmpty()) {
-                                //l.setTimeout(10L);
                                 this.lobbyDeletion.put(l.getId(),
                                         this.lobbyRepository.deleteLobby(l.getId())
                                         .delaySubscription(Duration.ofSeconds(10L))

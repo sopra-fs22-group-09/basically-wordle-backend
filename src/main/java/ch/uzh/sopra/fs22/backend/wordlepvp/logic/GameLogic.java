@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -24,7 +25,7 @@ public abstract class GameLogic implements Game, Serializable {
     private Map<Player, GameRound> game = new HashMap<>();
     private Map<Player, GameStatus> currentGameStatus = new HashMap<>();
     private Map<Player, GameStats> gameStats = new HashMap<>();
-    private List<Player> ranking = new ArrayList<>();
+    private Map<Player, Integer> ranking = new HashMap<>();
 
     @Override
     public Game start(Set<Player> players, String[] repoWords, String[] allowedWords) {
@@ -40,12 +41,14 @@ public abstract class GameLogic implements Game, Serializable {
         Arrays.setAll(targetWords, word -> this.repoWords[r.nextInt(this.repoWords.length)]);
         for (Player player : players) {
             this.game.put(player, new GameRound(player, 0, this.targetWords[0]));
-            List<Player> ranking = Objects.requireNonNullElseGet(this.ranking, ArrayList::new);
-            ranking.add(player);
+            GameStats gameStats = new GameStats();
+            gameStats.setScore(0);
+            this.gameStats.put(player, gameStats);
+            this.ranking.put(player, 0);
             updateTargetWord(player);
         }
         this.gameStats.forEach((p, gs) -> {
-            gs.setRanking(this.ranking);
+            gs.setRanking(this.ranking.keySet().stream().toList());
             this.gameStats.put(p, gs);
         });
         return this;
@@ -134,22 +137,19 @@ public abstract class GameLogic implements Game, Serializable {
         gameStats.setTimeTaken(gameStats.getTimeTaken() + roundStats.getTimeTaken());
         gameStats.setRoundsTaken(this.game.get(player).getCurrentRound() + 1);
         gameStats.setScore(gameStats.getScore() + roundStats.getScore());
-        this.ranking.sort(Comparator.comparing(p -> gameStats.getScore()));
+        this.ranking.replace(player, gameStats.getScore());
 
+        Map<Player, Integer> ranks = this.ranking.entrySet().stream()
+                .sorted(Map.Entry.<Player, Integer>comparingByValue().reversed())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (p, s) -> p, LinkedHashMap::new));
         this.gameStats.forEach((p, gs) -> {
-            gs.setRanking(this.ranking);
+            gs.setRanking(ranks.keySet().stream().toList());
             this.gameStats.put(p, gs);
         });
     }
 
     private void updateTargetWord(Player player) {
-        GameStats gameStats;
-        if (this.gameStats.get(player) == null) {
-            gameStats = new GameStats();
-            gameStats.setScore(0);
-        } else {
-            gameStats = this.gameStats.get(player);
-        }
+        GameStats gameStats = this.gameStats.get(player);
         gameStats.setTargetWord(this.game.get(player).getTargetWord());
         this.gameStats.put(player, gameStats);
     }
