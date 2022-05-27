@@ -93,6 +93,7 @@ public abstract class GameLogic implements Game, Serializable {
         if (this.maxTime == 0) { //Classic
             this.currentGameStatus.replaceAll((p, gs) -> GameStatus.FINISHED);
         } else if (nextRound < this.amountRounds) {
+            this.gameStats.forEach((p, gs) -> updateTargetWord(p));
             this.game.replaceAll((p, gr) -> new GameRound(p, nextRound, this.targetWords[nextRound]));
         } else {
             this.gameStats.forEach((p, gs) -> updateTargetWord(p));
