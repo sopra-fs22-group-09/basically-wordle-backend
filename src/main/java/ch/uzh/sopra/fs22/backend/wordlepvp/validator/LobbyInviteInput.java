@@ -8,6 +8,7 @@ import javax.validation.constraints.NotNull;
 @Getter
 @Setter
 public class LobbyInviteInput {
+
     @NotNull
     private String recipientId;
 

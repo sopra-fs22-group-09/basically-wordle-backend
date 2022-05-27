@@ -56,6 +56,7 @@ public class WordsRepository {
     }
 
     public String[] getAllAllowedWords() {
+        if (redisTemplate.opsForHash().size(allWords) < 1) cacheWordsFromAPI(allWords);
         return getRandomWords(redisTemplate.opsForHash().size(allWords).intValue());
     }
 
@@ -78,9 +79,9 @@ public class WordsRepository {
 
     private void cacheWordsFromAPI(String topic) {
         BufferedReader input = null;
-        for (int i = 0; i < urls.length; ++i) {
+        for (String s : urls) {
             try {
-                URL url = new URL(urls[i] + "?sp=?????&max=1000" + (topic.equals(allWords) ? "" : "&topics=" + topic));
+                URL url = new URL(s + "?sp=?????&max=1000" + (topic.equals(allWords) ? "" : "&topics=" + topic));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.connect();
