@@ -1,8 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.util;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.logic.Game;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStatus;
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.service.GameService;
 import reactor.core.scheduler.Schedulers;
@@ -25,7 +23,6 @@ public class GameTimerTask extends TimerTask {
     public void run() {
         this.gameRepository.getGame(gameId)
                 .publishOn(Schedulers.boundedElastic())
-                .doOnNext(g -> this.gameRepository.broadcastGameStatus(g, GameStatus.WAITING).subscribe())
                 .doOnNext(Game::endRound)
                 .doOnNext(this.gameService::restartTimer)
                 .flatMap(this.gameRepository::saveGame)
