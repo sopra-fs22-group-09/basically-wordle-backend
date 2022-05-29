@@ -124,9 +124,7 @@ public class GameService {
 
     public Flux<GameStatus> getGameStatus(String id, Mono<Player> player) {
 
-        return player
-                .flatMapMany(p -> this.gameRepository.getGameStatusStream(id, p))
-                .log();
+        return player.flatMapMany(p -> this.gameRepository.getGameStatusStream(id, p)).log();
 
     }
 
@@ -165,6 +163,7 @@ public class GameService {
     }
 
     public Mono<Boolean> markStandBy(Mono<Player> player) {
+
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .filter(l -> l.getGameCategory() == GameCategory.SOLO)
@@ -199,6 +198,7 @@ public class GameService {
                         "Something went terribly wrong."))
                 .log()
                 .then(Mono.just(true));
+
     }
 
     public void restartTimer(Game g) {
