@@ -144,7 +144,7 @@ type Game {
 type GameRound {
     player: Player
     currentRound: Int
-    targetWord: String #gonna remove later. only for testing
+    #targetWord: String
     finished: Boolean
     words: [String]
     letterStates: [[LetterState]]
