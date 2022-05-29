@@ -19,6 +19,7 @@ import reactor.core.scheduler.Schedulers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
+import java.util.TimerTask;
 
 @Service
 @Transactional
@@ -64,6 +65,13 @@ public class GameService {
                     return g;
                 })
                 .flatMap(this.gameRepository::saveGame)
+                .publishOn(Schedulers.boundedElastic())
+                .doOnNext(g -> new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        gameRepository.broadcastGame(g).subscribe();
+                    }
+                }, 500))
                 .log();
 
     }

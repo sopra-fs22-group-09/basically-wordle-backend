@@ -156,6 +156,20 @@ public class GameRepositoryTest {
     }
 
     @Test
+    public void broadcastGameTest() {
+
+        Game testGame = new SonicFast();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+
+        Mono<Long> broadCasted = this.gameRepository.broadcastGame(testGame);
+
+        StepVerifier.create(broadCasted)
+                .expectNext(0L)
+                .verifyComplete();
+
+    }
+
+    @Test
     public void broadcastGameStatusSingleTest() {
 
         Player testPlayer = Player.builder()
