@@ -1,12 +1,14 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.validator;
 
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameCategory;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
 
 import javax.validation.constraints.NotNull;
 
-@Data
+@Getter
+@Setter
 public class LobbyInput {
 
     @NotNull

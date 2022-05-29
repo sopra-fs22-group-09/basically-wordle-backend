@@ -1,6 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 
-import ch.uzh.sopra.fs22.backend.wordlepvp.model.Game;
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.GameStatus;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.Player;
 import org.springframework.data.redis.connection.ReactiveSubscription;
@@ -24,12 +24,11 @@ public class GameRepository {
         return this.reactiveGameRedisTemplate.<String, Game>opsForHash()
                 .put("games", game.getId(), game)
                 .map(g -> game)
-                .flatMap(g -> this.reactiveGameRedisTemplate.convertAndSend("game/" + g.getId(), g).thenReturn(g))
+                .flatMap(g -> this.broadcastGame(g).thenReturn(g))
                 .flatMapIterable(Game::getPlayers)
                 .flatMap(p -> this.broadcastGameStatusSingle(p.getId(), game.getGameStatus(p)).thenReturn(p))
                 .then(Mono.just(game))
                 .log();
-
     }
 
     public Mono<Long> deleteGame(String id) {
@@ -54,6 +53,10 @@ public class GameRepository {
         return this.reactiveGameRedisTemplate.listenToChannel("game/" + id)
                 .map(ReactiveSubscription.Message::getMessage)
                 .log();
+    }
+
+    public Mono<Long> broadcastGame(Game game) {
+        return this.reactiveGameRedisTemplate.convertAndSend("game/" + game.getId(), game);
     }
 
     public Mono<Long> broadcastGameStatusSingle(String playerId, GameStatus status) {

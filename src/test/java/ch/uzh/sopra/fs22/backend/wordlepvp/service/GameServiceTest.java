@@ -1,17 +1,22 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.Game;
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.GameRound;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes.Classic;
+import ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes.SonicFast;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.gameModes.WordsPP;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.WordsRepository;
+import ch.uzh.sopra.fs22.backend.wordlepvp.util.GameTimerTask;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -19,6 +24,8 @@ import reactor.test.StepVerifier;
 import java.lang.reflect.Field;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 @DataRedisTest
@@ -52,6 +59,7 @@ public class GameServiceTest {
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.SOLO)
                 .gameMode(GameCategory.SOLO.getDefaultGameMode())
+                .categories(new ArrayList<>())
                 .players(new HashSet<>())
                 .build();
         Game testGame = new Classic();
@@ -62,7 +70,85 @@ public class GameServiceTest {
         when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
         when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
-        when(wordsRepository.getRandomWords(Mockito.anyInt())).thenReturn(testWords);
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Game> game = gameService.initializeGame(Mono.just(testPlayer));
+
+        StepVerifier.create(game)
+                .expectNext(testGame)
+                .verifyComplete();
+    }
+
+    @Test
+    public void initializeGameTestFail() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(null)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testLobby.setGame(testGame);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Game> game = gameService.initializeGame(Mono.just(testPlayer));
+
+        StepVerifier.create(game)
+                .expectError(ResponseStatusException.class)
+                .verify();
+    }
+
+    @Test
+    public void initializeGameTestTimer() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(testPlayer)
+                .status(LobbyStatus.FULL)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
+        testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
+        testGame.setGameStatus(testPlayer2, GameStatus.GUESSING);
+        testLobby.setGame(testGame);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
 
         Mono<Game> game = gameService.initializeGame(Mono.just(testPlayer));
 
@@ -86,6 +172,94 @@ public class GameServiceTest {
         testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
         String[] testWords = {"Mules", "Monks", "Apple"};
         String[] allowedWords = {"Mules", "Monks", "Apple"};
+        LetterState[][] letterStates = new LetterState[6][5];
+
+        when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+
+        testGame.start(testPlayers, testWords, allowedWords);
+        GameRound testGameRound = null;
+        try {
+            Field privateField = testGame.getClass().getSuperclass().getDeclaredField("game");
+            privateField.setAccessible(true);
+            Map<Player, GameRound> game = (HashMap<Player, GameRound>) privateField.get(testGame);
+            testGameRound = game.get(testPlayer);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        assert testGameRound != null;
+
+        assertEquals(testPlayer, testGameRound.getPlayer());
+        assertEquals(0L, testGameRound.getFinish());
+        assertEquals(letterStates.length, testGameRound.getLetterStates().length);
+
+        Mono<GameRound> gameRound = gameService.submitWord("Mules", Mono.just(testPlayer));
+
+        StepVerifier.create(gameRound)
+                .expectNext(testGameRound)
+                .verifyComplete();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void submitWordSuccessTest() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Set<Player> testPlayers = new HashSet<>();
+        testPlayers.add(testPlayer);
+        Game testGame = new WordsPP();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+        testGame.setGameStatus(testPlayer, GameStatus.WAITING);
+        String[] testWords = {"Mules"};
+        String[] allowedWords = {"Mules"};
+
+        when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+
+        testGame.start(testPlayers, testWords, allowedWords);
+        GameRound testGameRound = null;
+        try {
+            Field privateField = testGame.getClass().getSuperclass().getDeclaredField("game");
+            privateField.setAccessible(true);
+            Map<Player, GameRound> game = (HashMap<Player, GameRound>) privateField.get(testGame);
+            testGameRound = game.get(testPlayer);
+
+            Field privateFieldTimers = gameService.getClass().getDeclaredField("gameTimers");
+            privateFieldTimers.setAccessible(true);
+            Timer gameTimer = new Timer();
+            gameTimer.schedule(new GameTimerTask(testGame.getId(), this.gameRepository, gameService), testGame.getRoundTime() * 1000L);
+            Map<String, Timer> gameTimers = (HashMap<String, Timer>) privateFieldTimers.get(gameService);
+            gameTimers.put(testGame.getId(), gameTimer);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        assert testGameRound != null;
+
+        Mono<GameRound> gameRound = gameService.submitWord("Mules", Mono.just(testPlayer));
+
+        StepVerifier.create(gameRound)
+                .expectNext(testGameRound)
+                .verifyComplete();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void submitWordTestWaiting() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Set<Player> testPlayers = new HashSet<>();
+        testPlayers.add(testPlayer);
+        Game testGame = new WordsPP();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+        testGame.setGameStatus(testPlayer, GameStatus.WAITING);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
@@ -111,7 +285,7 @@ public class GameServiceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void submitWordSuccessTest() {
+    public void submitWordTestClassic() {
 
         Player testPlayer = Player.builder()
                 .id("testPlayer")
@@ -119,11 +293,11 @@ public class GameServiceTest {
                 .build();
         Set<Player> testPlayers = new HashSet<>();
         testPlayers.add(testPlayer);
-        Game testGame = new WordsPP();
+        Game testGame = new Classic();
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
-        testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
-        String[] testWords = {"Mules"};
-        String[] allowedWords = {"Mules"};
+        testGame.setGameStatus(testPlayer, GameStatus.WAITING);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
@@ -147,8 +321,85 @@ public class GameServiceTest {
                 .verifyComplete();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
-    public void getConclusionTest() {
+    public void submitWordTestSonicFast() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Set<Player> testPlayers = new HashSet<>();
+        testPlayers.add(testPlayer);
+        Game testGame = new SonicFast();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+        testGame.setGameStatus(testPlayer, GameStatus.WAITING);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
+
+        when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+
+        testGame.start(testPlayers, testWords, allowedWords);
+        GameRound testGameRound = null;
+        try {
+            Field privateField = testGame.getClass().getSuperclass().getDeclaredField("game");
+            privateField.setAccessible(true);
+            Map<Player, GameRound> game = (HashMap<Player, GameRound>) privateField.get(testGame);
+            testGameRound = game.get(testPlayer);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        assert testGameRound != null;
+
+        Mono<GameRound> gameRound = gameService.submitWord("Mules", Mono.just(testPlayer));
+
+        StepVerifier.create(gameRound)
+                .expectNext(testGameRound)
+                .verifyComplete();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void submitWordTestPartialWord() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Set<Player> testPlayers = new HashSet<>();
+        testPlayers.add(testPlayer);
+        Game testGame = new SonicFast();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+        testGame.setGameStatus(testPlayer, GameStatus.WAITING);
+        String[] testWords = {"Mules"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
+
+        when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+
+        testGame.start(testPlayers, testWords, allowedWords);
+        GameRound testGameRound = null;
+        try {
+            Field privateField = testGame.getClass().getSuperclass().getDeclaredField("game");
+            privateField.setAccessible(true);
+            Map<Player, GameRound> game = (HashMap<Player, GameRound>) privateField.get(testGame);
+            testGameRound = game.get(testPlayer);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        assert testGameRound != null;
+
+        Mono<GameRound> gameRound = gameService.submitWord("Lemur", Mono.just(testPlayer));
+
+        StepVerifier.create(gameRound)
+                .expectNext(testGameRound)
+                .verifyComplete();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void submitWordTestGuessed() {
 
         Player testPlayer = Player.builder()
                 .id("testPlayer")
@@ -158,13 +409,92 @@ public class GameServiceTest {
         testPlayers.add(testPlayer);
         Game testGame = new WordsPP();
         testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+        testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
+        String[] testWords = {"Mules"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
+
+        when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+
+        testGame.start(testPlayers, testWords, allowedWords);
+        GameRound testGameRound = null;
+        try {
+            Field privateField = testGame.getClass().getSuperclass().getDeclaredField("game");
+            privateField.setAccessible(true);
+            Map<Player, GameRound> game = (HashMap<Player, GameRound>) privateField.get(testGame);
+            testGameRound = game.get(testPlayer);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        assert testGameRound != null;
+
+        Mono<GameRound> gameRound = gameService.submitWord("Mules", Mono.just(testPlayer));
+
+        StepVerifier.create(gameRound)
+                .expectNext(testGameRound)
+                .verifyComplete();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void submitWordTestNotGuessed() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Set<Player> testPlayers = new HashSet<>();
+        testPlayers.add(testPlayer);
+        Game testGame = new WordsPP();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+        testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
+        String[] testWords = {"Mules"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
+
+        when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+
+        testGame.start(testPlayers, testWords, allowedWords);
+        GameRound testGameRound = null;
+        try {
+            Field privateField = testGame.getClass().getSuperclass().getDeclaredField("game");
+            privateField.setAccessible(true);
+            Map<Player, GameRound> game = (HashMap<Player, GameRound>) privateField.get(testGame);
+            testGameRound = game.get(testPlayer);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        assert testGameRound != null;
+
+        Mono<GameRound> gameRound = gameService.submitWord("Apple", Mono.just(testPlayer));
+
+        StepVerifier.create(gameRound)
+                .expectNext(testGameRound)
+                .verifyComplete();
+    }
+
+    @Test
+    public void getConclusionTest() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Set<Player> testPlayers = new HashSet<>();
+        List<Player> testRanking = new ArrayList<>();
+        testPlayers.add(testPlayer);
+        testRanking.add(testPlayer);
+        Game testGame = new WordsPP();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
         String[] testWords = {"Apple"};
         String[] allowedWords = {"Mules", "Monks", "Apple"};
         GameStats testStats = new GameStats();
         testStats.setTargetWord("Apple");
+        testStats.setRanking(testRanking);
 
         when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
         when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(gameRepository.broadcastGameStatus(Mockito.any(), Mockito.any())).thenReturn(Mono.just(0L));
 
         testGame.start(testPlayers, testWords, allowedWords);
 
@@ -217,8 +547,243 @@ public class GameServiceTest {
                 .verify();
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void getOpponentGameRoundsTestOnFinally() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Set<Player> testPlayers = new HashSet<>();
+        testPlayers.add(testPlayer);
+        Game testGame = new WordsPP();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+        String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
+
+        when(gameRepository.getGameStream(Mockito.anyString())).thenReturn(Flux.just(testGame));
+        when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
+        when(gameRepository.broadcastGameStatus(Mockito.any(), Mockito.any())).thenReturn(Mono.just(0L));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+
+        try {
+            Field privateFieldTimers = gameService.getClass().getDeclaredField("gameTimers");
+            privateFieldTimers.setAccessible(true);
+            Timer gameTimer = new Timer();
+            gameTimer.schedule(new GameTimerTask(testGame.getId(), this.gameRepository, gameService), testGame.getRoundTime() * 1000L);
+            Map<String, Timer> gameTimers = (HashMap<String, Timer>) privateFieldTimers.get(gameService);
+            gameTimers.put(testGame.getId(), gameTimer);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        testGame.start(testPlayers, testWords, allowedWords);
+
+        Flux<GameRound[]> gameRounds = gameService.getOpponentGameRounds(Mono.just(testPlayer));
+
+        StepVerifier.create(gameRounds)
+                .thenCancel()
+                .verify();
+    }
+
+    @Test
+    public void getOpponentGameRoundsTestOnFinallyFinished() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Set<Player> testPlayers = new HashSet<>();
+        testPlayers.add(testPlayer);
+        Game testGame = new WordsPP();
+        testGame.setGameStatus(testPlayer, GameStatus.FINISHED);
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
+        String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
+
+        when(gameRepository.getGameStream(Mockito.anyString())).thenReturn(Flux.just(testGame));
+        when(gameRepository.getGame(Mockito.anyString())).thenReturn(Mono.just(testGame));
+
+        testGame.start(testPlayers, testWords, allowedWords);
+
+        Flux<GameRound[]> gameRounds = gameService.getOpponentGameRounds(Mono.just(testPlayer));
+
+        StepVerifier.create(gameRounds)
+                .thenCancel()
+                .verify();
+    }
+
     @Test
     public void markStandByTest() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(testPlayer)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
+        testLobby.setGame(testGame);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer));
+
+        StepVerifier.create(game)
+                .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    public void markStandByTestSyncing() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(testPlayer)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testGame.setGameStatus(testPlayer, GameStatus.SYNCING);
+        testGame.setGameStatus(testPlayer2, GameStatus.SYNCING);
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
+        testLobby.setGame(testGame);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer));
+
+        StepVerifier.create(game)
+                .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    public void markStandByTestNotOwnerNotSyncing() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(testPlayer)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
+        testLobby.setGame(testGame);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer2));
+
+        StepVerifier.create(game)
+                .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    public void markStandByTestGuessing() {
+
+        Player testPlayer = Player.builder()
+                .id("testPlayer")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Player testPlayer2 = Player.builder()
+                .id("testPlayer2")
+                .lobbyId("deadbeef-dead-beef-caff-deadbeefcaff")
+                .build();
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(testPlayer)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .categories(new ArrayList<>())
+                .players(new HashSet<>())
+                .build();
+        Game testGame = new WordsPP();
+        testGame.setId(testLobby.getId());
+        testLobby.getPlayers().add(testPlayer);
+        testLobby.getPlayers().add(testPlayer2);
+        testLobby.setGame(testGame);
+        testGame.setGameStatus(testPlayer, GameStatus.GUESSING);
+        testGame.setGameStatus(testPlayer2, GameStatus.SYNCING);
+        String[] testWords = {"Mules", "Monks", "Apple"};
+
+        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
+        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
+        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
+        when(wordsRepository.getWordsByTopics(Mockito.any(), Mockito.anyInt())).thenReturn(testWords);
+
+        Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer2));
+
+        StepVerifier.create(game)
+                .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    public void restartTimerTest() {
 
         Player testPlayer = Player.builder()
                 .id("testPlayer")
@@ -228,26 +793,21 @@ public class GameServiceTest {
                 .id("deadbeef-dead-beef-caff-deadbeefcaff")
                 .name("deadbeef")
                 .size(2)
-                .owner(testPlayer)
                 .status(LobbyStatus.OPEN)
                 .gameCategory(GameCategory.SOLO)
                 .gameMode(GameCategory.SOLO.getDefaultGameMode())
                 .players(new HashSet<>())
                 .build();
-        Game testGame = new Classic();
-        testGame.setId(testLobby.getId());
-        testLobby.setGame(testGame);
+        Set<Player> testPlayers = new HashSet<>();
+        testPlayers.add(testPlayer);
+        Game testGame = new WordsPP();
+        testGame.setId("deadbeef-dead-beef-caff-deadbeefcaff");
         String[] testWords = {"Mules", "Monks", "Apple"};
+        String[] allowedWords = {"Mules", "Monks", "Apple"};
+        testLobby.setGame(testGame);
 
-        when(lobbyRepository.getLobby(Mockito.anyString())).thenReturn(Mono.just(testLobby));
-        when(lobbyRepository.saveLobby(Mockito.any())).thenReturn(Mono.just(testLobby));
-        when(gameRepository.saveGame(Mockito.any())).thenReturn(Mono.just(testGame));
-        when(wordsRepository.getRandomWords(Mockito.anyInt())).thenReturn(testWords);
+        testGame.start(testPlayers, testWords, allowedWords);
 
-        Mono<Boolean> game = gameService.markStandBy(Mono.just(testPlayer));
-
-        StepVerifier.create(game)
-                .expectNext(true)
-                .verifyComplete();
+        assertDoesNotThrow(() -> gameService.restartTimer(testGame));
     }
 }

@@ -1,5 +1,7 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.Game;
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.GameRound;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
@@ -17,6 +19,7 @@ import reactor.core.scheduler.Schedulers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
+import java.util.TimerTask;
 
 @Service
 @Transactional
@@ -51,7 +54,7 @@ public class GameService {
                 .doOnNext(t -> t.getT2().setStatus(LobbyStatus.INGAME))
                 .zipWhen(t -> this.lobbyRepository.saveLobby(t.getT2()), (lp, p) -> lp)
                 .filter(t -> t.getT2().getGame().getGameStatus(t.getT1()) == GameStatus.GUESSING)
-                .map(l -> l.getT2().getGame().start(l.getT2().getPlayers(), this.wordsRepository.getRandomWords(500), this.wordsRepository.getAllAllowedWords()))
+                .map(l -> l.getT2().getGame().start(l.getT2().getPlayers(), this.wordsRepository.getWordsByTopics(l.getT2().getCategories().toArray(new String[0]), 500), this.wordsRepository.getAllAllowedWords()))
                 .map(g -> {
                     if (g.getMaxTime() == 0) {
                         return g;
@@ -62,6 +65,13 @@ public class GameService {
                     return g;
                 })
                 .flatMap(this.gameRepository::saveGame)
+                .publishOn(Schedulers.boundedElastic())
+                .doOnNext(g -> new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        gameRepository.broadcastGame(g).subscribe();
+                    }
+                }, 500))
                 .log();
 
     }
@@ -114,9 +124,7 @@ public class GameService {
 
     public Flux<GameStatus> getGameStatus(String id, Mono<Player> player) {
 
-        return player
-                .flatMapMany(p -> this.gameRepository.getGameStatusStream(id, p))
-                .log();
+        return player.flatMapMany(p -> this.gameRepository.getGameStatusStream(id, p)).log();
 
     }
 
@@ -155,6 +163,7 @@ public class GameService {
     }
 
     public Mono<Boolean> markStandBy(Mono<Player> player) {
+
         return player.mapNotNull(Player::getLobbyId)
                 .flatMap(this.lobbyRepository::getLobby)
                 .filter(l -> l.getGameCategory() == GameCategory.SOLO)
@@ -189,6 +198,7 @@ public class GameService {
                         "Something went terribly wrong."))
                 .log()
                 .then(Mono.just(true));
+
     }
 
     public void restartTimer(Game g) {

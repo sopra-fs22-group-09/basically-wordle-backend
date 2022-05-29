@@ -78,9 +78,4 @@ public class UserController {
     public Flux<User> friendsUpdates(@ContextValue(name = "Authorization") String authHeader) {
         return this.userService.getFriendsUpdates(AuthorizationHelper.extractAuthToken(authHeader));
     }
-
-//    @SubscriptionMapping
-//    public Flux<FriendInvite> friendRequests(@ContextValue(name = "Authorization") String authHeader) {
-//        return this.userService.receiveFriendRequests(AuthorizationHelper.extractAuthToken(authHeader));
-//    }
 }

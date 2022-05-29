@@ -117,6 +117,28 @@ public class LobbyRepositoryTest {
     }
 
     @Test
+    public void hasLobbyTest() {
+
+        Lobby testLobby = Lobby.builder()
+                .id("deadbeef-dead-beef-caff-deadbeefcaff")
+                .name("deadbeef")
+                .size(2)
+                .owner(null)
+                .status(LobbyStatus.OPEN)
+                .gameCategory(GameCategory.PVP)
+                .gameMode(GameCategory.PVP.getDefaultGameMode())
+                .players(new HashSet<>())
+                .build();
+        this.reactiveLobbyRedisOperations.<String, Lobby>opsForHash()
+                .put("lobbies", testLobby.getId(), testLobby).subscribe();
+
+        Mono<Boolean> lobbyExistence = this.lobbyRepository.hasLobby("deadbeef-dead-beef-caff-deadbeefcaff");
+
+        StepVerifier.create(lobbyExistence)
+                .expectNext(true)
+                .verifyComplete();
+    }
+    @Test
     public void getLobbyTest() {
 
         Lobby testLobby = Lobby.builder()

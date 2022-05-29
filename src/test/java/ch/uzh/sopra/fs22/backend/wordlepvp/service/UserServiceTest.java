@@ -9,13 +9,11 @@ import ch.uzh.sopra.fs22.backend.wordlepvp.validator.LoginInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.RegisterInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetInput;
 import ch.uzh.sopra.fs22.backend.wordlepvp.validator.ResetTokenInput;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
@@ -64,6 +62,16 @@ public class UserServiceTest {
     }
 
     @Test
+    public void findByIdTestFail() {
+
+        UUID testUserId = UUID.randomUUID();
+
+        when(userRepository.findById(Mockito.any())).thenThrow(IllegalArgumentException.class);
+
+        assertThrows(ResponseStatusException.class, () -> this.userService.findById(testUserId));
+    }
+
+    @Test
     public void createUserTest() {
 
         User testUser = User.builder()
@@ -80,6 +88,40 @@ public class UserServiceTest {
         User user = this.userService.createUser(testRegisterInput);
 
         assertEquals(testUser, user);
+    }
+
+    @Test
+    public void createUserTestFailUserExists() {
+
+        User testUser = User.builder()
+                .id(UUID.randomUUID())
+                .build();
+        RegisterInput testRegisterInput = new RegisterInput();
+        testRegisterInput.setUsername("testUser");
+        testRegisterInput.setPassword("testPassword1?");
+        testRegisterInput.setEmail("test@test.io");
+
+        when(userRepository.findByUsername(Mockito.any())).thenReturn(testUser);
+        when(userRepository.saveAndFlush(Mockito.any())).thenReturn(testUser);
+
+        assertThrows(ResponseStatusException.class, () -> this.userService.createUser(testRegisterInput));
+    }
+
+    @Test
+    public void createUserTestFailPassword() {
+
+        User testUser = User.builder()
+                .id(UUID.randomUUID())
+                .build();
+        RegisterInput testRegisterInput = new RegisterInput();
+        testRegisterInput.setUsername("testUser");
+        testRegisterInput.setPassword("test");
+        testRegisterInput.setEmail("test@test.io");
+
+        when(userRepository.findByUsername(Mockito.any())).thenReturn(null);
+        when(userRepository.saveAndFlush(Mockito.any())).thenReturn(testUser);
+
+        assertThrows(ResponseStatusException.class, () -> this.userService.createUser(testRegisterInput));
     }
 
     @Test
@@ -100,6 +142,24 @@ public class UserServiceTest {
         User user = this.userService.validateUser(testLoginInput);
 
         assertEquals(testUser, user);
+    }
+
+    @Test
+    public void validateUserTestFail() {
+
+        User testUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("testUser")
+                .passwordHash(encoder.encode("testPassword1?"))
+                .build();
+        LoginInput testLoginInput = new LoginInput();
+        testLoginInput.setUsername("testUser");
+        testLoginInput.setPassword("testPassword1?");
+
+        when(userRepository.findByUsername(Mockito.any())).thenReturn(null);
+        when(friendsRepository.broadcastFriendsEvent(Mockito.any())).thenReturn(Mono.empty());
+
+        assertThrows(ResponseStatusException.class, () -> this.userService.validateUser(testLoginInput));
     }
 
     @Test
@@ -146,6 +206,21 @@ public class UserServiceTest {
         when(userRepository.findByResetToken(Mockito.anyString())).thenReturn(testUser);
 
         assertDoesNotThrow(() -> userService.resetWithToken(testResetTokenInput));
+    }
+
+    @Test
+    public void resetWithTokenTestFail() {
+
+        User testUser = User.builder()
+                .id(UUID.randomUUID())
+                .build();
+        ResetTokenInput testResetTokenInput = new ResetTokenInput();
+        testResetTokenInput.setResetToken("testResetToken");
+        testResetTokenInput.setPassword("testPassword1?");
+
+        when(userRepository.findByResetToken(Mockito.anyString())).thenReturn(null);
+
+        assertThrows(ResponseStatusException.class, () -> userService.resetWithToken(testResetTokenInput));
     }
 
     @Test
@@ -197,17 +272,50 @@ public class UserServiceTest {
 
         User testUser = User.builder()
                 .id(UUID.randomUUID())
+                .friends(new HashSet<>())
                 .build();
+        UserStatus testStatus = UserStatus.ONLINE;
         UUID testFriendId = UUID.randomUUID();
         User testFriend = User.builder()
                 .id(testFriendId)
+                .friends(new HashSet<>())
                 .build();
+        List<User> testFriends = new ArrayList<>();
+
+        when(userRepository.findById(Mockito.any())).thenReturn(Optional.ofNullable(testFriend));
+        when(userRepository.saveAndFlush(Mockito.any())).thenReturn(testUser);
+        when(friendsRepository.broadcastFriendsEvent(Mockito.any())).thenReturn(Mono.empty());
+        when(userRepository.findFriendsByIdAndStatus(testUser.getId(), testStatus)).thenReturn(testFriends);
+
+        assertEquals(testFriends, this.userService.addFriend(testFriendId.toString(), testUser));
+    }
+
+    @Test
+    public void addFriendTestFriendIdNull() {
+
+        User testUser = User.builder()
+                .id(UUID.randomUUID())
+                .build();
+        User testFriend = User.builder().build();
 
         when(userRepository.findById(Mockito.any())).thenReturn(Optional.ofNullable(testFriend));
         when(userRepository.saveAndFlush(Mockito.any())).thenReturn(testUser);
         when(friendsRepository.broadcastFriendsEvent(Mockito.any())).thenReturn(Mono.empty());
 
-        assertThrows(NullPointerException.class, () -> userService.addFriend(testFriendId.toString(), testUser));
+        assertThrows(ResponseStatusException.class, () -> userService.addFriend(null, testUser));
+    }
+
+    @Test
+    public void addFriendTestFriendIdInvalid() {
+
+        User testUser = User.builder()
+                .id(UUID.randomUUID())
+                .build();
+        UUID testFriendId = UUID.randomUUID();
+
+        when(userRepository.findById(Mockito.any())).thenThrow(IllegalArgumentException.class);
+
+        assertThrows(ResponseStatusException.class, () -> userService.addFriend(testFriendId.toString(), testUser));
     }
 
     @Test

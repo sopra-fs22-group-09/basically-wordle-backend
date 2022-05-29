@@ -3,6 +3,7 @@ package ch.uzh.sopra.fs22.backend.wordlepvp.repository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.RedisConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,11 +13,13 @@ import org.springframework.data.redis.core.ReactiveRedisOperations;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.web.server.ResponseStatusException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @DataRedisTest
@@ -60,8 +63,6 @@ public class WordsRepositoryTest {
     @Test
     public void getRandomWordsTest() {
 
-        //TODO: MOCK IT
-
         String[] words = this.wordsRepository.getRandomWords(250);
 
         assertEquals(250, words.length);
@@ -76,4 +77,13 @@ public class WordsRepositoryTest {
         assertEquals(5, words[0].length());
         assertEquals(50, words.length);
     }
+
+    @Test
+    public void getWordsByTopicsTestTooMany() {
+
+        String[] topics = {"dogs", "cats"};
+
+        assertThrows(ResponseStatusException.class, () -> this.wordsRepository.getWordsByTopics(topics, 5000));
+    }
+
 }

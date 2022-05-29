@@ -15,6 +15,7 @@ import reactor.test.StepVerifier;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @DataRedisTest
@@ -68,5 +69,20 @@ public class PlayerServiceTest {
         StepVerifier.create(player)
                 .expectNext(testPlayer)
                 .verifyComplete();
+    }
+
+    @Test
+    public void getFromTokenTestFail() {
+
+        UUID testUserId = UUID.randomUUID();
+
+        when(authRepository.getUserID("testToken")).thenReturn(testUserId);
+        when(playerRepository.findById(Mockito.anyString())).thenReturn(null);
+
+        assertThrows(NullPointerException.class, () -> {
+            Mono<Player> player = playerService.getFromToken("testToken");
+            StepVerifier.create(player)
+                    .verifyComplete();
+        });
     }
 }

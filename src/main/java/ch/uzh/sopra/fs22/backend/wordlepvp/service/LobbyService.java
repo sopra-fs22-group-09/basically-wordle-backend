@@ -1,5 +1,6 @@
 package ch.uzh.sopra.fs22.backend.wordlepvp.service;
 
+import ch.uzh.sopra.fs22.backend.wordlepvp.logic.Game;
 import ch.uzh.sopra.fs22.backend.wordlepvp.model.*;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.GameRepository;
 import ch.uzh.sopra.fs22.backend.wordlepvp.repository.LobbyRepository;
@@ -62,6 +63,7 @@ public class LobbyService {
                     .status(LobbyStatus.OPEN)
                     .gameCategory(input.getGameCategory())
                     .gameMode(input.getGameCategory().getDefaultGameMode())
+                    .categories(new ArrayList<>())
                     .players(new HashSet<>())
                     .build();
             lobby.setGame(this.createGame(lobby.getId(), lobby.getGameMode()));
@@ -149,6 +151,7 @@ public class LobbyService {
 
                         l.getGame().setAmountRounds(input.getAmountRounds());
                         l.getGame().setRoundTime(input.getRoundTime());
+                        l.setCategories(Arrays.asList(input.getCategories()));
                     }
                     return l;
                 })
@@ -176,7 +179,6 @@ public class LobbyService {
 
                             this.lobbyRepository.saveLobby(l).subscribe();
                             if (l.getPlayers().isEmpty()) {
-                                //l.setTimeout(10L);
                                 this.lobbyDeletion.put(l.getId(),
                                         this.lobbyRepository.deleteLobby(l.getId())
                                         .delaySubscription(Duration.ofSeconds(10L))
