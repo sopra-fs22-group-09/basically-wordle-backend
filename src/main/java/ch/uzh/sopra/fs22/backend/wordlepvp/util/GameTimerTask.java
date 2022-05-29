@@ -23,7 +23,7 @@ public class GameTimerTask extends TimerTask {
     public void run() {
         this.gameRepository.getGame(gameId)
                 .publishOn(Schedulers.boundedElastic())
-                .doOnNext(this.gameRepository::broadcastGame)
+                .doOnNext(g -> this.gameRepository.broadcastGame(g).subscribe())
                 .doOnNext(Game::endRound)
                 .doOnNext(this.gameService::restartTimer)
                 .flatMap(this.gameRepository::saveGame)
