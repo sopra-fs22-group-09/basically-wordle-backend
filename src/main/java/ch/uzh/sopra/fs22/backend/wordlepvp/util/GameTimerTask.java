@@ -22,8 +22,8 @@ public class GameTimerTask extends TimerTask {
     @Override
     public void run() {
         this.gameRepository.getGame(gameId)
-                .doOnNext(this.gameRepository::broadcastGame)
                 .publishOn(Schedulers.boundedElastic())
+                .doOnNext(this.gameRepository::broadcastGame)
                 .doOnNext(Game::endRound)
                 .doOnNext(this.gameService::restartTimer)
                 .flatMap(this.gameRepository::saveGame)
